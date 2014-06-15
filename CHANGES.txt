@@ -1,0 +1,87 @@
+Changelog
+=========
+
+
+2014-06-15 :
+------------
+
+* create a github project 'sqlite_bro', from 'sqlite_py_manager' baresql example
+
+* discover how to publish on Pypi
+
+
+
+2014-06-14c : "It's a long way to temporary !"
+--------------------------------------------
+
+* works with  temporary tables
+
+
+
+2014-06-10a : 'Sanitizer of Python (xkcd.com/327)'
+------------------------------------------------
+
+* imported python functions must be validated
+
+
+
+2014-06-09a : 'The magic 8th PEP'
+---------------------------------
+
+* PEP8 alignement
+
+
+2014-06-07a : 'Yield me a token'
+--------------------------------
+
+* the pythonic way to generate tokens is 'Yield'
+
+
+2014-06-04a : 'Log me out !'
+--------------------------
+
+* export SQL + SQL top result in a file in 1 click
+
+
+2014-06-01a 'Commit and Rollback'
+---------------------------------
+
+* support COMMIT and ROLLBACK
+
+
+2014-06-03a : 'See me now ?'
+--------------------------
+
+* character INCREASE icon, so the back of the class can see
+
+
+2014-05-25a : 'sql everywhere'
+--------------------------
+
+* make it work as low as Python 2.7 + SQlite 3.6.21 
+
+
+2014-05-25a : 'Assassination of Class Room
+------------------------------------------
+
+* the GUI is a Class now
+
+
+2014-05-11
+----------
+
+* addition of Tooltips over icons
+
+
+
+2014-05-06
+----------
+
+* addition of the Welcome Demo
+
+
+
+2014-05-01
+----------
+
+* birth : need of a ZERO-requirements SQLite Browser for a Python Class
