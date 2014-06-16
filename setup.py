@@ -23,25 +23,23 @@ setup(
     version=get_version(),
     description="a graphic SQLite Client in 1 Python file",
     long_description=get_long_description(),
-    keywords='sqlite',
+    keywords=['sqlite', 'gui'],
     author='stonebig',
     author_email='',
-    url='https://github.com/stonebig/baresql/blob/master/examples',
+    url='https://github.com/stonebig/sqlite_bro',
     license='MIT license',
     py_modules=['sqlite_bro'],
-    namespace_packages=[],
+    #namespace_packages=[],
     include_package_data=True,
-    zip_safe=False,
-    install_requires=[
-        # Nothing 
-    ],
+    #zip_safe=False,
+    #install_requires=[],
     entry_points={
         'console_scripts': [
             'sqlite_bro = sqlite_bro:_main',
         ],
     },
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Environment :: Console',
         'Intended Audience :: Education',
         'License :: OSI Approved :: MIT License',

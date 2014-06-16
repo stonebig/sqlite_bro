@@ -31,7 +31,7 @@ class App:
     def __init__(self):
         """create a tkk graphic interface with a main window tk_win"""
         self.__version__ = '0.7.0'
-        self._title= "2014-06-15a : my first Pypi !"
+        self._title= "2014-06-15b : my first Pypi !"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.tk_win = Tk()
@@ -100,26 +100,27 @@ class App:
 
         # list of (image, action, tooltip) :
         to_show = [
-           ('refresh_img', self.actualize_db, "Actualize Databases"),
-           ('run_img', self.run_tab, "Run Script Selection"),
-           ('deltab_img', lambda x=self: x.n.del_tab(), "Delete current tab"),
+           ('refresh_img', self.actualize_db, "Actualize databases"),
+           ('run_img', self.run_tab, "Run script selection"),
+           ('deltab_img', lambda x=self: x.n.del_tab(),
+            "Delete current script"),
            ('deltabresult_img', lambda x=self: x.n.remove_treeviews(
-            x.n.notebook.select()), "Clear tab Result"),
+            x.n.notebook.select()), "Clear script result"),
            ('newtab_img', lambda x=self: x.n.new_query_tab("___", ""),
-            "Create a New Tab"),
+            "Create a new script"),
            ('csvin_img', lambda x=self: import_csvtb([x.conn, x.actualize_db]),
-            "Import a CSV file into a Table"),
+            "Import a CSV file into a table"),
            ('csvex_img', lambda x=self: export_csvtb([x.conn, x.db_tree]),
-            "Export Selected Table to a CSV file"),
+            "Export selected table to a CSV file"),
            ('dbdef_img', self.savdb_script,
-            "Save main Database as a SQL Script"),
+            "Save main database as a SQL script"),
            ('qryex_img', lambda x=self: export_csvqr([x.conn, x.n]),
-            "Export Selected Query to a CSV file"),
+            "Export script selection to a CSV file"),
            ('exe_img', self.exsav_script,
-            "Run Script+Output to a file (First 200 rec. per Qry)"),
-           ('sqlin_img', self.load_script, "Load a SQL Script File"),
-           ('sqlsav_img', self.sav_script, "Save a SQL Script in a File"),
-           ('chgsz_img', self.chg_fontsize, "Modify Font Size")]
+            "Run script+output to a file (First 200 rec. per Qry)"),
+           ('sqlin_img', self.load_script, "Load a SQL script file"),
+           ('sqlsav_img', self.sav_script, "Save a SQL script in a file"),
+           ('chgsz_img', self.chg_fontsize, "Modify font size")]
 
         for img, action, tip in to_show:
             b = Button(self.toolbar, image=self.tk_icon[img], command=action)

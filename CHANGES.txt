@@ -7,7 +7,7 @@ Changelog
 
 * create a github project 'sqlite_bro', from 'sqlite_py_manager' baresql example
 
-* discover how to publish on Pypi
+* discover how to publish on Pypi (hard)
 
 
 
