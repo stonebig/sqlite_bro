@@ -68,7 +68,7 @@ Changelog
 
 
 2014-05-25a : 'Assassination of Class Room'
-----------------------------------------_--
+-------------------------------------------
 
 * the GUI is a Class now
 
