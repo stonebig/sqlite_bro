@@ -25,7 +25,7 @@ setup(
     long_description=get_long_description(),
     keywords=['sqlite', 'gui'],
     author='stonebig',
-    author_email='',
+    author_email='write_pull_requests_to_stonebig@github.com',
     url='https://github.com/stonebig/sqlite_bro',
     license='MIT license',
     py_modules=['sqlite_bro'],

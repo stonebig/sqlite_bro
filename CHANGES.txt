@@ -2,8 +2,14 @@ Changelog
 =========
 
 
-2014-06-15 :
-------------
+2014-06-17a : v0.7.1
+--------------------
+
+* improved publishing on Pypi (was tricky, especially the front page)
+
+
+2014-06-15b : v0.7.0
+--------------------
 
 * create a github project 'sqlite_bro', from 'sqlite_py_manager' baresql example
 
@@ -12,14 +18,14 @@ Changelog
 
 
 2014-06-14c : "It's a long way to temporary !"
---------------------------------------------
+----------------------------------------------
 
 * works with  temporary tables
 
 
 
 2014-06-10a : 'Sanitizer of Python (xkcd.com/327)'
-------------------------------------------------
+--------------------------------------------------
 
 * imported python functions must be validated
 
@@ -38,7 +44,7 @@ Changelog
 
 
 2014-06-04a : 'Log me out !'
---------------------------
+----------------------------
 
 * export SQL + SQL top result in a file in 1 click
 
@@ -50,19 +56,19 @@ Changelog
 
 
 2014-06-03a : 'See me now ?'
---------------------------
+----------------------------
 
 * character INCREASE icon, so the back of the class can see
 
 
 2014-05-25a : 'sql everywhere'
---------------------------
+------------------------------
 
 * make it work as low as Python 2.7 + SQlite 3.6.21 
 
 
-2014-05-25a : 'Assassination of Class Room
-------------------------------------------
+2014-05-25a : 'Assassination of Class Room'
+----------------------------------------_--
 
 * the GUI is a Class now
 
