@@ -30,8 +30,8 @@ class App:
     """the GUI graphic application"""
     def __init__(self):
         """create a tkk graphic interface with a main window tk_win"""
-        self.__version__ = '0.7.1'
-        self._title= "2014-06-17a : Pypi done right !"
+        self.__version__ = '0.7.2'
+        self._title= "2014-06-19a : 'Remember me'"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.tk_win = Tk()
@@ -41,6 +41,7 @@ class App:
 
         self.font_size = 10
         self.font_wheight = 0
+        self.initialdir = "."
         # With a Menubar and Toolbar
         self.create_menu()
         self.create_toolbar()
@@ -108,14 +109,13 @@ class App:
             x.n.notebook.select()), "Clear script result"),
            ('newtab_img', lambda x=self: x.n.new_query_tab("___", ""),
             "Create a new script"),
-           ('csvin_img', lambda x=self: import_csvtb([x.conn, x.actualize_db]),
-            "Import a CSV file into a table"),
-           ('csvex_img', lambda x=self: export_csvtb([x.conn, x.db_tree]),
-            "Export selected table to a CSV file"),
+           ('csvin_img', self.import_csvtb, "Import a CSV file into a table"),
+           ('csvex_img', self.export_csvtb,
+                          "Export selected table to a CSV file"),
            ('dbdef_img', self.savdb_script,
-            "Save main database as a SQL script"),
-           ('qryex_img', lambda x=self: export_csvqr([x.conn, x.n]),
-            "Export script selection to a CSV file"),
+                          "Save main database as a SQL script"),
+           ('qryex_img',self.export_csvqr,
+                          "Export script selection to a CSV file"),
            ('exe_img', self.exsav_script,
             "Run script+output to a file (First 200 rec. per Qry)"),
            ('sqlin_img', self.load_script, "Load a SQL script file"),
@@ -127,17 +127,23 @@ class App:
             b.pack(side=LEFT, padx=2, pady=2)
             self.createToolTip(b, tip)
 
+    def set_initialdir(self, proposal):
+        """change initial dir, if possible"""
+        if os.path.isfile(proposal):
+            self.initialdir = os.path.split(proposal)
+
     def new_db(self, filename=''):
         """create a new database"""
         if filename == '':
             filename = filedialog.asksaveasfilename(
-                defaultextension='.db',
+                initialdir=self.initialdir, defaultextension='.db',
                 title="Define a new database name and location",
                 filetypes=[("default", "*.db"), ("other", "*.db*"),
                            ("all", "*.*")])
         if filename != '':
             self.database_file = filename
             if os.path.isfile(filename):
+                self.set_initialdir(filename)
                 if messagebox.askyesno(
                    message='Confirm Destruction of previous Datas ?',
                    icon='question', title='Destroying'):
@@ -148,10 +154,11 @@ class App:
     def open_db(self):
         """open an existing database"""
         filename = filedialog.askopenfilename(
-            defaultextension='.db',
+            initialdir=self.initialdir, defaultextension='.db',
             filetypes=[("default", "*.db"), ("other", "*.db*"),
                        ("all", "*.*")])
         if filename != '':
+            self.set_initialdir(filename)
             self.database_file = filename
             self.conn = Baresql(self.database_file)
             self.actualize_db()
@@ -159,11 +166,12 @@ class App:
     def load_script(self):
         """load a script file, ask validation of detected Python code"""
         filename = filedialog.askopenfilename(
-            defaultextension='.sql',
+            initialdir=self.initialdir, defaultextension='.sql',
             filetypes=[("default", "*.sql"), ("other", "*.txt"),
                        ("all", "*.*")])
         if filename != '':
-            text = ((filename.replace("\\", "/")).split("/")[-1]).split(".")[0]
+            self.set_initialdir(filename)
+            text = os.path.split(filename)[1].split(".")[0]
             with io.open(filename, encoding=guess_encoding(filename)[0]) as f:
                 script = f.read()
                 sqls = self.conn.get_sqlsplit(script, remove_comments=True)
@@ -186,11 +194,12 @@ class App:
     def savdb_script(self):
         """save database as a script file"""
         filename = filedialog.asksaveasfilename(
-            defaultextension='.db',
+            initialdir=self.initialdir, defaultextension='.db',
             title="save database structure in a text file",
             filetypes=[("default", "*.sql"), ("other", "*.txt"),
                        ("all", "*.*")])
         if filename != '':
+            self.set_initialdir(filename)
             with io.open(filename, 'w', encoding='utf-8') as f:
                 for line in self.conn.iterdump():
                     f.write('%s\n' % line)
@@ -203,11 +212,12 @@ class App:
             fw = self.n.fw_labels[active_tab_id]
             script = fw.get(1.0, END)[:-1]
             filename = filedialog.asksaveasfilename(
-                defaultextension='.db',
+                initialdir=self.initialdir, defaultextension='.db',
                 title="save script in a sql file",
                 filetypes=[("default", "*.sql"), ("other", "*.txt"),
                            ("all", "*.*")])
         if filename != "":
+            self.set_initialdir(filename)
             with io.open(filename, 'w', encoding='utf-8') as f:
                 if "你好 мир Artisou à croute" not in script:
                     f.write("/*utf-8 tag : 你好 мир Artisou à croute*/\n")
@@ -216,13 +226,14 @@ class App:
     def attach_db(self):
         """attach an existing database"""
         filename = filedialog.askopenfilename(
-            defaultextension='.db',
+            initialdir=self.initialdir, defaultextension='.db',
             title="Choose a database to attach ",
             filetypes=[("default", "*.db"), ("other", "*.db*"),
                        ("all", "*.*")])
-        attach = ((filename.replace("\\", "/")).split("/")[-1]).split(".")[0]
+        attach = os.path.split(filename)[1].split(".")[0]
 
         if filename != '':
+            self.set_initialdir(filename)
             attach_order = "ATTACH DATABASE '%s' as '%s' " % (filename, attach)
             self.conn.execute(attach_order)
             self.actualize_db()
@@ -297,12 +308,13 @@ class App:
             fw = self.n.fw_labels[active_tab_id]
             script = fw.get(1.0, END)[:-1]
             filename = filedialog.asksaveasfilename(
-                defaultextension='.db',
+                initialdir=self.initialdir, defaultextension='.db',
                 title="execute Script + output in a log file",
                 filetypes=[("default", "*.txt"), ("other", "*.log"),
                            ("all", "*.*")])
         if filename == "":
             return
+        self.set_initialdir(filename)
         with io.open(filename, 'w', encoding='utf-8') as f:
             if "你好 мир Artisou à croute" not in script:
                 f.write("/*utf-8 tag : 你好 мир Artisou à croute*/\n")
@@ -593,6 +605,109 @@ xlzceksqu6ET7JwtLRrhwNt+1HdDUQAAOw==
 
         self.conn.conn.isolation_level = isolation  # restore standard
 
+    def import_csvtb(self):
+        """import csv dialog (with guessing of encoding and separator)"""
+        csv_file = filedialog.askopenfilename(
+            initialdir=self.initialdir, defaultextension='.db',
+            title="Choose a csv fileto import ",
+            filetypes=[("default", "*.csv"), ("other", "*.txt"),
+                       ("all", "*.*")])
+        if csv_file != '':
+            self.set_initialdir(csv_file)
+            # guess encoding
+            encodings = guess_encoding(csv_file)
+            # guess Header and delimiter
+            with io.open(csv_file, encoding=encodings[0]) as f:
+                preview = f.read(9999)
+                has_header = True
+                default_sep = ","
+                default_quote = '"'
+            try:
+                dialect = csv.Sniffer().sniff(preview)
+                has_header = csv.Sniffer().has_header(preview)
+                default_sep = dialect.delimiter
+                default_quote = Dialect.quotechar
+            except:
+                pass  # sniffer can fail
+            default_decim = [".", ","] if default_sep != ";" else [",", "."]
+
+            # Request form : List of Horizontal Frame names 'FramLabel'
+            #   or fields : 'Label', 'InitialValue',['r' or 'w', Width, Height]
+            table_name = csv_file.replace("\\", "/").split("/")[-1].split(".")[0]
+            dlines = "\n\n".join(preview.splitlines()[:3])
+            guess_sql = guess_sql_creation(table_name, default_sep,
+                           default_decim, has_header, dlines, default_quote)[2]
+            fields_in = ['', ['csv Name', csv_file, 'r', 100], '',
+                         ['table Name', table_name],
+                         ['column separator', default_sep, 'w', 20],
+                         ['string delimiter', default_quote, 'w', 20],
+                         '', ['Decimal separator', default_decim],
+                         ['Encoding', encodings],
+                         'Fliflaps', ['Header line', has_header],
+                         ['Create table', True],
+                         ['Replace existing data', True], '',
+                         ['first 3 lines', dlines, 'r', 100, 10], '',
+                         ['use manual creation request', False], '',
+                         ['creation request', guess_sql, 'w', 100, 10]]
+            actions = ([self.conn, self.actualize_db])
+            create_dialog(("Importing %s" % csv_file), fields_in,
+                          ("Import", import_csvtb_ok), actions)
+
+    def export_csvtb(self):
+        """get selected table definition and launch cvs export dialog"""
+        # determine selected table
+        actions = [self.conn, self.db_tree]
+        selitem = self.db_tree.focus()  # get tree item having the focus
+        if selitem != '':
+            seltag = self.db_tree.item(selitem, "tag")[0]
+            if seltag == "run_up":  # if 'run-up', do as if dbl-click 1 level up
+                selitem = self.db_tree.parent(selitem)
+            # get final information
+            definition, query = self.db_tree.item(selitem, "values")
+            if query != "":  # run the export_csv dialog
+                title = ('Export Table "%s" to ?' %
+                         self.db_tree.item(selitem, "text"))
+                self.export_csv_dialog(query, title, actions)
+
+    def export_csvqr(self):
+        """get tab selected definition and launch cvs export dialog"""
+        actions = [self.conn, self.n]
+        active_tab_id = self.n.notebook.select()
+        if active_tab_id != '':  # get current selection (or all)
+            fw = self.n.fw_labels[active_tab_id]
+            try:
+                query = fw.get('sel.first', 'sel.last')
+            except:
+                query = fw.get(1.0, END)[:-1]
+            if query != "":
+                self.export_csv_dialog(query, "Export Query", actions)
+
+    def export_csv_dialog(self, query="--", text="undefined.csv", actions=[]):
+        """export csv dialog"""
+        # proposed encoding (we favorize utf-8 or utf-8-sig)
+        encodings = ["utf-8", locale.getdefaultlocale()[1], "utf-16",
+                     "utf-8-sig"]
+        if os.name == 'nt':
+            encodings = ["utf-8-sig", locale.getdefaultlocale()[1], "utf-16",
+                         "utf-8"]
+        # proposed csv separator
+        default_sep = [",", "|", ";"]
+        csv_file = filedialog.asksaveasfilename(
+            initialdir=self.initialdir, defaultextension='.db', title=text,
+            filetypes=[("default", "*.csv"), ("other", "*.txt"),
+                       ("all", "*.*")])
+        if csv_file != "":
+            # Request form (http://www.python-course.eu/tkinter_entry_widgets.php)
+            fields = ['', ['csv Name', csv_file, 'r', 100], '',
+                      ['column separator', default_sep],
+                      ['Header line', True],
+                      ['Encoding', encodings], '',
+                      ["Data to export (MUST be 1 Request)",
+                       (query), 'w', 100, 10]]
+
+            create_dialog(("Export to %s" % csv_file), fields,
+                          ("Export", export_csv_ok), actions)
+
 
 class NotebookForQueries():
     """Create a Notebook with a list in the First frame
@@ -777,52 +892,6 @@ def guess_sql_creation(table_name, separ, decim, header, data, quoter='"'):
     return sql_crea, typ, head
 
 
-def import_csvtb(actions):
-    """import csv dialog (with guessing of encoding and separator)"""
-    csv_file = filedialog.askopenfilename(
-        defaultextension='.db',
-        title="Choose a csv fileto import ",
-        filetypes=[("default", "*.csv"), ("other", "*.txt"), ("all", "*.*")])
-    # guess encoding
-    encodings = guess_encoding(csv_file)
-    # guess Header and delimiter
-    with io.open(csv_file, encoding=encodings[0]) as f:
-        preview = f.read(9999)
-        has_header = True
-        default_sep = ","
-        default_quote = '"'
-    try:
-        dialect = csv.Sniffer().sniff(preview)
-        has_header = csv.Sniffer().has_header(preview)
-        default_sep = dialect.delimiter
-        default_quote = Dialect.quotechar
-    except:
-        pass  # sniffer can fail
-    default_decim = [".", ","] if default_sep != ";" else [",", "."]
-
-    # Request form : List of Horizontal Frame names 'FramLabel'
-    #    or fields :  'Label', 'InitialValue',['r' or 'w', Width, Height]
-    table_name = (csv_file.replace("\\", "/")).split("/")[-1].split(".")[0]
-    dlines = "\n\n".join(preview.splitlines()[:3])
-    guess_sql = guess_sql_creation(table_name, default_sep, default_decim,
-                                   has_header, dlines, default_quote)[2]
-    fields_in = ['', ['csv Name', csv_file, 'r', 100], '',
-                 ['table Name', table_name],
-                 ['column separator', default_sep, 'w', 20],
-                 ['string delimiter', default_quote, 'w', 20],
-                 '', ['Decimal separator', default_decim],
-                 ['Encoding', encodings],
-                 'Fliflaps', ['Header line', has_header],
-                 ['Create table', True],
-                 ['Replace existing data', True], '',
-                 ['first 3 lines', dlines, 'r', 100, 10], '',
-                 ['use manual creation request', False], '',
-                 ['creation request', guess_sql, 'w', 100, 10]]
-
-    create_dialog(("Importing %s" % csv_file), fields_in,
-                  ("Import", import_csvtb_ok), actions)
-
-
 def guess_encoding(csv_file):
     """guess the encoding of the given file"""
     with io.open(csv_file, "rb") as f:
@@ -838,32 +907,6 @@ def guess_encoding(csv_file):
                 return ["utf-8"]
         except:
             return [locale.getdefaultlocale()[1], "utf-8"]
-
-
-def export_csv_dialog(query="select 42", text="undefined.csv", actions=[]):
-    """export csv dialog"""
-    # proposed encoding (we favorize utf-8 or utf-8-sig)
-    encodings = ["utf-8", locale.getdefaultlocale()[1], "utf-16", "utf-8-sig"]
-    if os.name == 'nt':
-        encodings = ["utf-8-sig", locale.getdefaultlocale()[1], "utf-16",
-                     "utf-8"]
-    # proposed csv separator
-    default_sep = [",", "|", ";"]
-
-    csv_file = filedialog.asksaveasfilename(
-        defaultextension='.db', title=text,
-        filetypes=[("default", "*.csv"), ("other", "*.txt"), ("all", "*.*")])
-    if csv_file != "":
-        # Request form (http://www.python-course.eu/tkinter_entry_widgets.php)
-        fields = ['', ['csv Name', csv_file, 'r', 100], '',
-                  ['column separator', default_sep],
-                  ['Header line', True],
-                  ['Encoding', encodings], '',
-                  ["Data to export (MUST be 1 Request)", (query), 'w', 100, 10]
-                  ]
-
-        create_dialog(("Export to %s" % csv_file), fields,
-                      ("Export", export_csv_ok), actions)
 
 
 def create_dialog(title, fields_in, buttons, actions):
@@ -1042,36 +1085,6 @@ def export_csv_ok(thetop, entries, actions):
             writer.writerow([i[0] for i in cursor.description])  # heading row
     writer.writerows(cursor.fetchall())
     fout.close
-
-
-def export_csvtb(actions):
-    """get selected table definition and launch cvs export dialog"""
-    # determine selected table
-    db_tree = actions[1]
-    selitem = db_tree.focus()  # get tree item having the focus
-    if selitem != '':
-        seltag = db_tree.item(selitem, "tag")[0]
-        if seltag == "run_up":  # if 'run-up', do as if dbl-click 1 level up
-            selitem = db_tree.parent(selitem)
-        # get final information
-        definition, query = db_tree.item(selitem, "values")
-        if query != "":  # run the export_csv dialog
-            title = ('Export Table "%s" to ?' % db_tree.item(selitem, "text"))
-            export_csv_dialog(query, title, actions)
-
-
-def export_csvqr(actions):
-    """get tab selected definition and launch cvs export dialog"""
-    n = actions[1]
-    active_tab_id = n.notebook.select()
-    if active_tab_id != '':  # get current selection (or all)
-        fw = n.fw_labels[active_tab_id]
-        try:
-            query = fw.get('sel.first', 'sel.last')
-        except:
-            query = fw.get(1.0, END)[:-1]
-        if query != "":
-            export_csv_dialog(query, "Export Query", actions)
 
 
 def get_leaves(conn, category, attached_db="", tbl=""):
