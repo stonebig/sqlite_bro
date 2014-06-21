@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-2014-06-21a : v0.7.3 'Mark the date !'
+2014-06-21a : v0.8.0 'Mark the date !'
 ----------------------------------
 
 * recognize date formats in .csv importation
