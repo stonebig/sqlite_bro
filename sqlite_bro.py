@@ -30,8 +30,8 @@ class App:
     """the GUI graphic application"""
     def __init__(self):
         """create a tkk graphic interface with a main window tk_win"""
-        self.__version__ = '0.7.2'
-        self._title= "2014-06-19a : 'Remember me'"
+        self.__version__ = '0.7.3'
+        self._title= "2014-06-21a : 'Mark the date !'"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.tk_win = Tk()
@@ -636,7 +636,7 @@ xlzceksqu6ET7JwtLRrhwNt+1HdDUQAAOw==
             table_name = csv_file.replace("\\", "/").split("/")[-1].split(".")[0]
             dlines = "\n\n".join(preview.splitlines()[:3])
             guess_sql = guess_sql_creation(table_name, default_sep,
-                           default_decim, has_header, dlines, default_quote)[2]
+                           ".", has_header, dlines, default_quote)[2]
             fields_in = ['', ['csv Name', csv_file, 'r', 100], '',
                          ['table Name', table_name],
                          ['column separator', default_sep, 'w', 20],
@@ -875,13 +875,23 @@ def guess_sql_creation(table_name, separ, decim, header, data, quoter='"'):
     except:  # minimal hack for python2.7
         dlines = list(csv.reader(data.replace('\n\n', '\n').splitlines(),
                       delimiter=str(separ), quotechar=str(quoter)))
-    r, typ = list(dlines[0]), list(dlines[1])
+    r, val = list(dlines[0]), list(dlines[1])
+    typ = ['TEXT']*len(r)  # default value is TEXT 
     for i in range(len(r)):
         try:
-            float(typ[i].replace(decim, '.'))
+            float(val[i].replace(decim, '.'))  #  unless it can be a real
             typ[i] = 'REAL'
         except:
-            typ[i] = 'TEXT'
+            checker = sqlite.connect(':memory:')
+            #avoid the false positive 'now'
+            val_not_now = val[i].replace('w','www').replace('W','WWW')                    
+            test = "select datetime('{0}')".format(val_not_now)
+            try :
+                if checker.execute(test).fetchall()[0][0]:
+                    typ[i] = 'DATETIME'  # and unless SQLite can see a DATETIME
+            except:
+                pass
+            checker.close
     if header:
         head = ",\n".join([('"%s" %s' % (r[i], typ[i]))
                            for i in range(len(r))])
