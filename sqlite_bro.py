@@ -30,8 +30,8 @@ class App:
     """the GUI graphic application"""
     def __init__(self):
         """create a tkk graphic interface with a main window tk_win"""
-        self.__version__ = '0.8.0'
-        self._title= "2014-06-21a : 'Mark the date !'"
+        self.__version__ = '0.8.1'
+        self._title= "2014-06-25a : 'Attach them all !'"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.tk_win = Tk()
@@ -231,7 +231,10 @@ class App:
             filetypes=[("default", "*.db"), ("other", "*.db*"),
                        ("all", "*.*")])
         attach = os.path.split(filename)[1].split(".")[0]
-
+        avoid = {i[1]:0 for i in get_leaves(self.conn, 'attached_databases')}
+        att , indice = attach , 0
+        while attach in avoid:
+            attach, indice  = att + "_" + str(indice), indice + 1
         if filename != '':
             self.set_initialdir(filename)
             attach_order = "ATTACH DATABASE '%s' as '%s' " % (filename, attach)
@@ -240,11 +243,9 @@ class App:
 
     def close_db(self):
         """close the database"""
-        try:
-            self.db_tree.delete("Database")
-        except:
-            pass
         self.conn.close
+        self.new_db(":memory:")
+        self.actualize_db()
 
     def actualize_db(self):
         """refresh the database view"""

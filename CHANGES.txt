@@ -2,6 +2,12 @@ Changelog
 =========
 
 
+2014-06-25a : v0.8.1 'Attach them all !'
+----------------------------------------
+
+* support attachement of several databases with the same name
+
+
 2014-06-21a : v0.8.0 'Mark the date !'
 --------------------------------------
 
