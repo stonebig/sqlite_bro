@@ -30,8 +30,8 @@ class App:
     """the GUI graphic application"""
     def __init__(self):
         """create a tkk graphic interface with a main window tk_win"""
-        self.__version__ = '0.8.1'
-        self._title= "2014-06-25a : 'Attach them all !'"
+        self.__version__ = '0.8.2'
+        self._title= "2014-06-26a : 'Getting to the point'"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.tk_win = Tk()
@@ -81,6 +81,8 @@ class App:
                               command=lambda: self.new_db(":memory:"))
         self.menu.add_command(label='Open Database ...',
                               command=self.open_db)
+        self.menu.add_command(label='Open Database ...(legacy auto-commit)',
+                              command=lambda: self.open_db(""))
         self.menu.add_command(label='Close Database', command=self.close_db)
         self.menu.add_separator()
         self.menu.add_command(label='Attach Database', command=self.attach_db)
@@ -151,7 +153,7 @@ class App:
             self.conn = Baresql(self.database_file)
             self.actualize_db()
 
-    def open_db(self):
+    def open_db(self, isolation_level = None):
         """open an existing database"""
         filename = filedialog.askopenfilename(
             initialdir=self.initialdir, defaultextension='.db',
@@ -582,29 +584,30 @@ xlzceksqu6ET7JwtLRrhwNt+1HdDUQAAOw==
                     sql_error = True
                     break
 
-        try:
-            if self.conn.conn.in_transaction:  # python 3.2
+        if self.conn.conn.isolation_level != isolation: 
+            # if we're in 'backward' compatible mode (automatic commit)
+            try:
+                if self.conn.conn.in_transaction:  # python 3.2
+                    if not sql_error:
+                        cu.execute("COMMIT;")
+                        if log is not None:  # write to logFile
+                            log.write("\n-------COMMIT;--------\n" % counter)
+                    else:
+                        cu.execute("ROLLBACK;")
+            except:
                 if not sql_error:
-                    cu.execute("COMMIT;")
-                    if log is not None:  # write to logFile
-                        log.write("\n---------COMMIT;----------\n" % counter)
+                    try:
+                        cu.execute("COMMIT;")
+                        if log is not None:  # write to logFile
+                            log.write("\n-------COMMIT;--------\n" % counter)
+                    except:
+                        pass
                 else:
-                    cu.execute("ROLLBACK;")
-        except:
-            if not sql_error:
-                try:
-                    cu.execute("COMMIT;")
-                    if log is not None:  # write to logFile
-                        log.write("\n---------COMMIT;----------\n" % counter)
-                except:
-                    pass
-            else:
-                try:
-                    cu.execute("ROLLBACK;")
-                except:
-                    pass
-
-        self.conn.conn.isolation_level = isolation  # restore standard
+                    try:
+                        cu.execute("ROLLBACK;")
+                    except:
+                        pass
+            self.conn.conn.isolation_level = isolation  # restore standard
 
     def import_csvtb(self):
         """import csv dialog (with guessing of encoding and separator)"""
@@ -1143,7 +1146,8 @@ def get_leaves(conn, category, attached_db="", tbl=""):
 
 class Baresql():
     """a small wrapper around sqlite3 module"""
-    def __init__(self, connection="", keep_log=False, cte_inline=True):
+    def __init__(self, connection="", keep_log=False, cte_inline=True,
+                 isolation_level = None):
         self.dbname = connection.replace(":///", "://").replace(
             "sqlite://", "")
         self.conn = sqlite.connect(self.dbname,
@@ -1152,7 +1156,8 @@ class Baresql():
         self.conn_def = {}
         self.do_log = keep_log
         self.log = []
-
+        self.conn.isolation_level = isolation_level #commit experience
+        
     def close(self):
         """close database and clear dictionnary of registered 'pydef'"""
         self.conn.close
@@ -1322,7 +1327,24 @@ select py_sin(1) as sinus_1, py_fib(8) as fib_8, sqlite_version() ;
 \n-- to EXPORT :
 --    a TABLE, select TABLE, then click on icon 'SQL->CSV'
 --    a QUERY RESULT, select the SCRIPT text, then click on icon '???->CSV',
--- example : select the end of this line: SELECT SQLITE_VERSION()  """
+-- example : select the end of this line: SELECT SQLITE_VERSION()
+\n\n-- to use COMMIT and ROLLBACK :
+BEGIN TRANSACTION;
+UPDATE item SET Kg = Kg + 1;
+COMMIT;
+BEGIN TRANSACTION;
+UPDATE item SET Kg = 0;
+select Kg, Description from Item;
+ROLLBACK;
+select Kg, Description from Item;
+\n\n-- to use SAVEPOINT :
+SAVEPOINT remember_Neo;  -- create a savepoint
+UPDATE item SET Description = 'Smith'; -- do things
+SELECT ItemNo, Description FROM Item; -- see things done
+ROLLBACK TO SAVEPOINT remember_Neo; -- go back to savepoint state
+SELECT ItemNo, Description FROM Item;  -- see all is back to normal
+RELEASE SAVEPOINT remember_Neo; -- free memory
+"""
     app.n.new_query_tab("Welcome", welcome_text)
     app.tk_win.mainloop()
     

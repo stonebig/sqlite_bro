@@ -2,6 +2,16 @@ Changelog
 =========
 
 
+2014-06-26a : v0.8.2 'Getting to the point'
+-----------------------------------------
+
+* switch to no-autocommit mode by default to allow savepoints
+
+* a 'legacy autocommit' Open Database option is added
+
+* add an example of COMMIT and ROLLBACK, and an example of SAVEPOINTS
+
+
 2014-06-25a : v0.8.1 'Attach them all !'
 ----------------------------------------
 
