@@ -3,7 +3,7 @@ Changelog
 
 
 2014-06-26a : v0.8.2 'Getting to the point'
------------------------------------------
+-------------------------------------------
 
 * switch to no-autocommit mode by default to allow savepoints
 
