@@ -30,8 +30,8 @@ class App:
     """the GUI graphic application"""
     def __init__(self):
         """create a tkk graphic interface with a main window tk_win"""
-        self.__version__ = '0.8.2'
-        self._title= "2014-06-26a : 'Getting to the point'"
+        self.__version__ = '0.8.3'
+        self._title= "2014-06-28a : 'Cross on tabs !'"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.tk_win = Tk()
@@ -45,6 +45,9 @@ class App:
         # With a Menubar and Toolbar
         self.create_menu()
         self.create_toolbar()
+
+        # Create style "ButtonNotebook"
+        self.create_style()
 
         # With a Panedwindow of two frames: 'Database' and 'Queries'
         p = ttk.Panedwindow(self.tk_win, orient=HORIZONTAL)
@@ -105,10 +108,6 @@ class App:
         to_show = [
            ('refresh_img', self.actualize_db, "Actualize databases"),
            ('run_img', self.run_tab, "Run script selection"),
-           ('deltab_img', lambda x=self: x.n.del_tab(),
-            "Delete current script"),
-           ('deltabresult_img', lambda x=self: x.n.remove_treeviews(
-            x.n.notebook.select()), "Clear script result"),
            ('newtab_img', lambda x=self: x.n.new_query_tab("___", ""),
             "Create a new script"),
            ('csvin_img', self.import_csvtb, "Import a CSV file into a table"),
@@ -269,7 +268,7 @@ class App:
         # for attached databases
         for att_db in self.feed_dbtree(id0, 'attached_databases'):
             # create another top node
-            dbtext2, insert_position = att_db + "(Attached)", 'end'
+            dbtext2, insert_position = att_db + " (Attached)", 'end'
             if att_db == "temp":
                 dbtext2, insert_position = "temp (%s)" % dbtext, 0
             id0 = self.db_tree.insert("", insert_position, dbtext2,
@@ -382,16 +381,6 @@ hIdyfouMi14BC5COgoqBHQttk5VumxJ1bJuZoJacpKE9EQA7
 R0lGODdhGAAYAJkAAP///zOqMwCqMwAAACwAAAAAGAAYAAACSoSPqcvt4aIJEFU5g7AUC9px1/JR
 3yYy4LqAils2IZdFMzCP6nhLd2/j6VqHD+1RAQKLHVfC+VwtcT3pNKOTYjTC4SOK+YbH5EYBADs=
 ''',
-            'deltab_img': '''\
-R0lGODdhGAAYAKoAAP///56fnf9VAMzVzP9VMwAAAAAAAAAAACwAAAAAGAAYAAADZAi63P4wykmB
-uO6KFnpX2raEnBeMGkgyZqsRoci2Znx9zKDjQGd7Dd2AFoiZgjuXEZhLomy9U3MojVk0PIUQt7re
-kFSVTCxdbMsPLDgLYZ+JxDU8PuXN3c4JPqxHA84Ue2wPbAkAOw==
-''',
-            'deltabresult_img': '''\
-R0lGODdhGAAYAJkAAP///56fnf8AAAAAACwAAAAAGAAYAAACXIyPBsu9CYObQDFbqcM16cZFondJ
-z0ie33aA5nqGL4y4cCnf8cytdanr5HS/k0CAMhxzRyQu0Gw9m8gDtdhpNBdbIW/G7e5sDqprGBak
-x0CAmXGVqsTlpciOOhYAADs=
-''',
             'newtab_img': '''\
 R0lGODdhGAAYAJkAAP///56fnQAAAAAAACwAAAAAGAAYAAACSoSPqcsm36KDsj1R1d00840E4ige
 3xWSo9YppRGwGKPGCUrXtfQCut3ouYC5IHEhTCSHRt4x5fytIlKSs0l9HpZKLcy7BXOhRUYBADs=
@@ -439,9 +428,75 @@ nW8VAxfCCA8DFnsAExUWAxWGeCEAOw==
 R0lGODdhGAAYAJkAAP///wAAADOqMwCqMywAAAAAGAAYAAACZISPGRvpb1iDRjy5KBBWYc0NXjQ9
 A8cdDFkiZyiIwDpnCYqzCF2lr2rTHVKbDgsTJG52yE8R0nRSJA7qNOhpVbFPHhdhPF20w46S+f2h
 xlzceksqu6ET7JwtLRrhwNt+1HdDUQAAOw==
+''',
+'img_close': '''\
+R0lGODlhCAAIAMIBAAAAADs7O4+Pj9nZ2Ts7Ozs7Ozs7Ozs7OyH+EUNyZWF0ZWQgd2l0aCBHSU1Q
+ACH5BAEKAAQALAAAAAAIAAgAAAMVGDBEA0qNJyGw7AmxmuaZhWEU5kEJADs=
+''',
+'img_closeactive': '''\
+R0lGODlhCAAIAMIEAAAAAP/SAP/bNNnZ2cbGxsbGxsbGxsbGxiH5BAEKAAQALAAAAAAIAAgAAAMV
+GDBEA0qNJyGw7AmxmuaZhWEU5kEJADs=
+''',
+'img_closepressed': '''\
+R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
 '''
         }
-        return {k: PhotoImage(data=v) for k, v in icons.items()}
+        return {k: PhotoImage(k, data=v) for k, v in icons.items()}
+
+    def btn_press(self, event):
+            """button press over a widget with a 'close' element"""
+            x, y, widget = event.x, event.y, event.widget
+            elem = widget.identify(x, y)
+            if "close" in elem:
+                index = widget.index("@%d,%d" % (x, y))
+                widget.state(['pressed'])
+                widget.pressed_index = index
+
+    def btn_release(self, event):
+            """button release over a widget with a 'close' element"""
+            x, y, widget = event.x, event.y, event.widget
+
+            if not widget.instate(['pressed']):
+                return
+
+            elem = widget.identify(x, y)
+
+            if "close" in elem:
+                index = widget.index("@%d,%d" % (x, y))
+                if widget.pressed_index == index:
+                 widget.forget(index)
+                 widget.event_generate("<<NotebookClosedTab>>")
+
+            widget.state(["!pressed"])
+            widget.pressed_index = None
+
+    def create_style(self):
+        """create a Notebook style with close button"""
+        # from https://github.com/python-git/python/blob/master/Demo/tkinter/
+        #             ttk/notebook_closebtn.py
+        # himself from http://paste.tclers.tk/896
+        style = ttk.Style()
+
+        style.element_create("close", "image", "img_close",
+            ("active", "pressed", "!disabled", "img_closepressed"),
+            ("active", "!disabled", "img_closeactive"), border=6, sticky='')
+
+        style.layout("ButtonNotebook", [("ButtonNotebook.client", {"sticky": "nswe"})])
+        style.layout("ButtonNotebook.Tab", [
+            ("ButtonNotebook.tab", {"sticky": "nswe", "children":
+                [("ButtonNotebook.padding", {"side": "top", "sticky": "nswe",
+                                     "children":
+                    [("ButtonNotebook.focus", {"side": "top", "sticky": "nswe",
+                                       "children":
+                        [("ButtonNotebook.label", {"side": "left", "sticky": ''}),
+                 ("ButtonNotebook.close", {"side": "left", "sticky": ''})]
+                    })]
+                })]
+            })]
+        )
+
+        self.tk_win.bind_class("TNotebook", "<ButtonPress-1>", self.btn_press, True)
+        self.tk_win.bind_class("TNotebook", "<ButtonRelease-1>", self.btn_release)
 
     def createToolTip(self, widget, text):
         """create a tooptip box for a widget."""
@@ -720,7 +775,7 @@ class NotebookForQueries():
     def __init__(self, tk_win, root, queries):
         self.tk_win = tk_win
         self.root = root
-        self.notebook = Notebook(root)  # ttk.
+        self.notebook = Notebook(root, style="ButtonNotebook")  # ttk.
 
         self.fw_labels = {}  # tab_tk_id -> Scripting frame python object
         self.fw_result_nbs = {}  # tab_tk_id -> Notebook of Results
@@ -741,7 +796,7 @@ class NotebookForQueries():
         # new "editable" script
         f1 = ttk.Labelframe(fw_welcome, text='Script', width=200, height=100)
         fw_welcome.add(f1)
-        fw_label = Text(f1, bd=1)
+        fw_label = Text(f1, bd=1, undo=True)
 
         scroll = ttk.Scrollbar(f1, command=fw_label.yview)
         fw_label.configure(yscrollcommand=scroll.set)
@@ -760,7 +815,7 @@ class NotebookForQueries():
         fw_welcome.add(fr)
 
         # containing a notebook
-        fw_result_nb = Notebook(fr)
+        fw_result_nb = Notebook(fr, style="ButtonNotebook")
         fw_result_nb.pack(fill='both', expand=True)
         # resize rules
         fw_welcome.columnconfigure(0, weight=1)
@@ -972,7 +1027,8 @@ def create_dialog(title, fields_in, buttons, actions):
                                          text=field[0])
                 d_frame.grid(column=0, row=0, sticky='nsew', pady=1, padx=1)
                 Grid.rowconfigure(packing_frame, 0, weight=1)
-                fw_label = Text(d_frame, bd=1, width=width, height=height)
+                fw_label = Text(d_frame, bd=1, width=width, height=height,
+                                undo=True)
                 fw_label.pack(side=LEFT, expand=YES, fill=BOTH)
                 scroll = ttk.Scrollbar(d_frame, command=fw_label.yview)
                 scroll.pack(side=RIGHT, expand=NO, fill=Y)

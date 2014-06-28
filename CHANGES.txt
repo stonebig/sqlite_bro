@@ -2,6 +2,14 @@ Changelog
 =========
 
 
+2014-06-28a : v0.8.3 'Cross on tabs !'
+--------------------------------------
+
+* each tab has its closing button 
+
+* Ctrl-Z and Ctrl-Y works on Script Text aera
+
+
 2014-06-26a : v0.8.2 'Getting to the point'
 -------------------------------------------
 
