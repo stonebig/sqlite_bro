@@ -2,6 +2,12 @@ Changelog
 =========
 
 
+2014-06-30a : v0.8.4 'Move your tabs !'
+---------------------------------------
+
+* tabs can be dragged with the mouse
+
+
 2014-06-28a : v0.8.3 'Cross on tabs !'
 --------------------------------------
 

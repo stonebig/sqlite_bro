@@ -30,8 +30,8 @@ class App:
     """the GUI graphic application"""
     def __init__(self):
         """create a tkk graphic interface with a main window tk_win"""
-        self.__version__ = '0.8.3'
-        self._title= "2014-06-28a : 'Cross on tabs !'"
+        self.__version__ = '0.8.4'
+        self._title= "2014-06-30a : 'Move your tabs !'"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.tk_win = Tk()
@@ -48,6 +48,9 @@ class App:
 
         # Create style "ButtonNotebook"
         self.create_style()
+        # Initiate Drag State
+        self.state_drag = False
+        self.state_drag_index  = 0
 
         # With a Panedwindow of two frames: 'Database' and 'Queries'
         p = ttk.Panedwindow(self.tk_win, orient=HORIZONTAL)
@@ -446,27 +449,58 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
     def btn_press(self, event):
             """button press over a widget with a 'close' element"""
             x, y, widget = event.x, event.y, event.widget
-            elem = widget.identify(x, y)
-            if "close" in elem:
+            elem = widget.identify(x, y)  # widget is the notebook
+            if "close" in elem: # close button function
                 index = widget.index("@%d,%d" % (x, y))
                 widget.state(['pressed'])
                 widget.pressed_index = index
+            elif "label" in elem:  # move function
+                index = widget.index("@%d,%d" % (x, y))
+                self.state_drag = True
+                self.state_drag_widgetid = widget.tabs()[index]  
+                self.state_drag_index = index
+
+    def btn_Movex(self, event):
+        """make the tab follows if button is pressed and mouse moves"""
+        x, y, widget = event.x, event.y, event.widget
+        elem = widget.identify(x, y)
+        if "label" in elem : #and widget.instate(['pressed']):
+            index = widget.index("@%d,%d" % (x, y))
+            if self.state_drag:
+                if self.state_drag_index != index : 
+                    self.btn_Move(widget, self.state_drag_index, index)
+                    self.state_drag_index = index
+
+    def btn_Move(self, notebook, old_index, new_index):
+        """Move old_index tab to new_index position"""
+        # stackoverflow.com/questions/11570786/tkinter-treeview-drag-and-drop
+        if new_index != "":
+            target_index = new_index
+            if new_index >= len(notebook.tabs())-1:
+                target_index = "end"
+            titre = notebook.tab(old_index, 'text')
+            notebook.forget(old_index)
+            notebook.insert(target_index,self.state_drag_widgetid , text=titre )
+            notebook.select(new_index)
 
     def btn_release(self, event):
             """button release over a widget with a 'close' element"""
             x, y, widget = event.x, event.y, event.widget
+            elem = widget.identify(x, y)
+            index = self.state_drag_index 
+            if "close" in elem or "label" in elem:
+                index = widget.index("@%d,%d" % (x, y))
+            if "close" in elem and widget.instate(['pressed']):
+                if widget.pressed_index == index:
+                    widget.forget(index)
+                    widget.event_generate("<<NotebookClosedTab>>")
+            if self.state_drag and elem.strip() != "":
+                if self.state_drag_index != index : 
+                    self.btn_Move(widget, self.state_drag_index, index)
+            self.state_drag = False
 
             if not widget.instate(['pressed']):
                 return
-
-            elem = widget.identify(x, y)
-
-            if "close" in elem:
-                index = widget.index("@%d,%d" % (x, y))
-                if widget.pressed_index == index:
-                 widget.forget(index)
-                 widget.event_generate("<<NotebookClosedTab>>")
-
             widget.state(["!pressed"])
             widget.pressed_index = None
 
@@ -497,6 +531,7 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
 
         self.tk_win.bind_class("TNotebook", "<ButtonPress-1>", self.btn_press, True)
         self.tk_win.bind_class("TNotebook", "<ButtonRelease-1>", self.btn_release)
+        self.tk_win.bind_class("TNotebook", "<B1-Motion>",self.btn_Movex)
 
     def createToolTip(self, widget, text):
         """create a tooptip box for a widget."""
