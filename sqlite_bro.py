@@ -30,8 +30,8 @@ class App:
     """the GUI graphic application"""
     def __init__(self):
         """create a tkk graphic interface with a main window tk_win"""
-        self.__version__ = '0.8.5pre'
-        self._title = "2014-07-02a : 'Be OS agnostic !'"
+        self.__version__ = '0.8.5'
+        self._title = "2014-07-02b : 'Rename your tabs !'"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.tk_win = Tk()
@@ -446,6 +446,31 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
         }
         return {k: PhotoImage(k, data=v) for k, v in icons.items()}
 
+    def btn_chg_tab_ok(self, thetop, entries, actions):
+        """chg a tab title"""
+        widget, index = actions
+        # build dico of result
+        d = {f[0]: f[1]() for f in entries
+             if not isinstance(f, (type('e'), type(u'e')))}
+
+        title = d['new label'].strip()
+        thetop.destroy()
+        widget.tab(index, text=title)
+
+    def btn_presstwice(self, event):
+        """double-click on a tab definition to change label"""
+        x, y, widget = event.x, event.y, event.widget
+        elem = widget.identify(x, y)
+        if "label" in elem:  # and widget.instate(['pressed']):
+            index = widget.index("@%d,%d" % (x, y))
+            titre = widget.tab(index, 'text')
+        # determine selected table
+        actions = [widget, index]
+        title = 'Changing Tab label'
+        fields = ['', ['current label', (titre), 'r', 30], '',
+                  ['new label', titre, 'w', 30]]
+        create_dialog(title, fields, ("Ok", self.btn_chg_tab_ok), actions)
+
     def btn_press(self, event):
             """button press over a widget with a 'close' element"""
             x, y, widget = event.x, event.y, event.widget
@@ -535,6 +560,7 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
         self.tk_win.bind_class("TNotebook", "<ButtonRelease-1>",
                                self.btn_release)
         self.tk_win.bind_class("TNotebook", "<B1-Motion>", self.btn_Movex)
+        self.tk_win.bind_class("TNotebook", "<Double-1>", self.btn_presstwice)
 
     def createToolTip(self, widget, text):
         """create a tooptip box for a widget."""
