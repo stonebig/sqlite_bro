@@ -31,7 +31,7 @@ class App:
     def __init__(self):
         """create a tkk graphic interface with a main window tk_win"""
         self.__version__ = '0.8.4'
-        self._title= "2014-06-30a : 'Move your tabs !'"
+        self._title = "2014-06-30a : 'Move your tabs !'"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.tk_win = Tk()
@@ -50,7 +50,7 @@ class App:
         self.create_style()
         # Initiate Drag State
         self.state_drag = False
-        self.state_drag_index  = 0
+        self.state_drag_index = 0
 
         # With a Panedwindow of two frames: 'Database' and 'Queries'
         p = ttk.Panedwindow(self.tk_win, orient=HORIZONTAL)
@@ -115,11 +115,11 @@ class App:
             "Create a new script"),
            ('csvin_img', self.import_csvtb, "Import a CSV file into a table"),
            ('csvex_img', self.export_csvtb,
-                          "Export selected table to a CSV file"),
+            "Export selected table to a CSV file"),
            ('dbdef_img', self.savdb_script,
-                          "Save main database as a SQL script"),
-           ('qryex_img',self.export_csvqr,
-                          "Export script selection to a CSV file"),
+            "Save main database as a SQL script"),
+           ('qryex_img', self.export_csvqr,
+            "Export script selection to a CSV file"),
            ('exe_img', self.exsav_script,
             "Run script+output to a file (First 200 rec. per Qry)"),
            ('sqlin_img', self.load_script, "Load a SQL script file"),
@@ -155,7 +155,7 @@ class App:
             self.conn = Baresql(self.database_file)
             self.actualize_db()
 
-    def open_db(self, isolation_level = None):
+    def open_db(self, isolation_level=None):
         """open an existing database"""
         filename = filedialog.askopenfilename(
             initialdir=self.initialdir, defaultextension='.db',
@@ -235,10 +235,10 @@ class App:
             filetypes=[("default", "*.db"), ("other", "*.db*"),
                        ("all", "*.*")])
         attach = os.path.split(filename)[1].split(".")[0]
-        avoid = {i[1]:0 for i in get_leaves(self.conn, 'attached_databases')}
-        att , indice = attach , 0
+        avoid = {i[1]: 0 for i in get_leaves(self.conn, 'attached_databases')}
+        att, indice = attach, 0
         while attach in avoid:
-            attach, indice  = att + "_" + str(indice), indice + 1
+            attach, indice = att + "_" + str(indice), indice + 1
         if filename != '':
             self.set_initialdir(filename)
             attach_order = "ATTACH DATABASE '%s' as '%s' " % (filename, attach)
@@ -432,15 +432,15 @@ R0lGODdhGAAYAJkAAP///wAAADOqMwCqMywAAAAAGAAYAAACZISPGRvpb1iDRjy5KBBWYc0NXjQ9
 A8cdDFkiZyiIwDpnCYqzCF2lr2rTHVKbDgsTJG52yE8R0nRSJA7qNOhpVbFPHhdhPF20w46S+f2h
 xlzceksqu6ET7JwtLRrhwNt+1HdDUQAAOw==
 ''',
-'img_close': '''\
+            'img_close': '''\
 R0lGODlhCAAIAMIBAAAAADs7O4+Pj9nZ2Ts7Ozs7Ozs7Ozs7OyH+EUNyZWF0ZWQgd2l0aCBHSU1Q
 ACH5BAEKAAQALAAAAAAIAAgAAAMVGDBEA0qNJyGw7AmxmuaZhWEU5kEJADs=
 ''',
-'img_closeactive': '''\
+            'img_closeactive': '''\
 R0lGODlhCAAIAMIEAAAAAP/SAP/bNNnZ2cbGxsbGxsbGxsbGxiH5BAEKAAQALAAAAAAIAAgAAAMV
 GDBEA0qNJyGw7AmxmuaZhWEU5kEJADs=
 ''',
-'img_closepressed': '''\
+            'img_closepressed': '''\
 R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
 '''
         }
@@ -450,24 +450,24 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
             """button press over a widget with a 'close' element"""
             x, y, widget = event.x, event.y, event.widget
             elem = widget.identify(x, y)  # widget is the notebook
-            if "close" in elem: # close button function
+            if "close" in elem:  # close button function
                 index = widget.index("@%d,%d" % (x, y))
                 widget.state(['pressed'])
                 widget.pressed_index = index
             elif "label" in elem:  # move function
                 index = widget.index("@%d,%d" % (x, y))
                 self.state_drag = True
-                self.state_drag_widgetid = widget.tabs()[index]  
+                self.state_drag_widgetid = widget.tabs()[index]
                 self.state_drag_index = index
 
     def btn_Movex(self, event):
         """make the tab follows if button is pressed and mouse moves"""
         x, y, widget = event.x, event.y, event.widget
         elem = widget.identify(x, y)
-        if "label" in elem : #and widget.instate(['pressed']):
+        if "label" in elem:  # and widget.instate(['pressed']):
             index = widget.index("@%d,%d" % (x, y))
             if self.state_drag:
-                if self.state_drag_index != index : 
+                if self.state_drag_index != index:
                     self.btn_Move(widget, self.state_drag_index, index)
                     self.state_drag_index = index
 
@@ -480,14 +480,14 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                 target_index = "end"
             titre = notebook.tab(old_index, 'text')
             notebook.forget(old_index)
-            notebook.insert(target_index,self.state_drag_widgetid , text=titre )
+            notebook.insert(target_index, self.state_drag_widgetid, text=titre)
             notebook.select(new_index)
 
     def btn_release(self, event):
             """button release over a widget with a 'close' element"""
             x, y, widget = event.x, event.y, event.widget
             elem = widget.identify(x, y)
-            index = self.state_drag_index 
+            index = self.state_drag_index
             if "close" in elem or "label" in elem:
                 index = widget.index("@%d,%d" % (x, y))
             if "close" in elem and widget.instate(['pressed']):
@@ -495,7 +495,7 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                     widget.forget(index)
                     widget.event_generate("<<NotebookClosedTab>>")
             if self.state_drag and elem.strip() != "":
-                if self.state_drag_index != index : 
+                if self.state_drag_index != index:
                     self.btn_Move(widget, self.state_drag_index, index)
             self.state_drag = False
 
@@ -515,23 +515,26 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
             ("active", "pressed", "!disabled", "img_closepressed"),
             ("active", "!disabled", "img_closeactive"), border=6, sticky='')
 
-        style.layout("ButtonNotebook", [("ButtonNotebook.client", {"sticky": "nswe"})])
+        style.layout("ButtonNotebook", [
+            ("ButtonNotebook.client", {"sticky": "nswe"})])
         style.layout("ButtonNotebook.Tab", [
             ("ButtonNotebook.tab", {"sticky": "nswe", "children":
                 [("ButtonNotebook.padding", {"side": "top", "sticky": "nswe",
                                      "children":
-                    [("ButtonNotebook.focus", {"side": "top", "sticky": "nswe",
+                  [("ButtonNotebook.focus", {"side": "top", "sticky": "nswe",
                                        "children":
-                        [("ButtonNotebook.label", {"side": "left", "sticky": ''}),
+                    [("ButtonNotebook.label", {"side": "left", "sticky": ''}),
                  ("ButtonNotebook.close", {"side": "left", "sticky": ''})]
                     })]
                 })]
             })]
         )
 
-        self.tk_win.bind_class("TNotebook", "<ButtonPress-1>", self.btn_press, True)
-        self.tk_win.bind_class("TNotebook", "<ButtonRelease-1>", self.btn_release)
-        self.tk_win.bind_class("TNotebook", "<B1-Motion>",self.btn_Movex)
+        self.tk_win.bind_class("TNotebook", "<ButtonPress-1>",
+                               self.btn_press, True)
+        self.tk_win.bind_class("TNotebook", "<ButtonRelease-1>",
+                               self.btn_release)
+        self.tk_win.bind_class("TNotebook", "<B1-Motion>", self.btn_Movex)
 
     def createToolTip(self, widget, text):
         """create a tooptip box for a widget."""
@@ -674,7 +677,7 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                     sql_error = True
                     break
 
-        if self.conn.conn.isolation_level != isolation: 
+        if self.conn.conn.isolation_level != isolation:
             # if we're in 'backward' compatible mode (automatic commit)
             try:
                 if self.conn.conn.in_transaction:  # python 3.2
@@ -729,8 +732,9 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
             #   or fields : 'Label', 'InitialValue',['r' or 'w', Width, Height]
             table_name = csv_file.replace("\\", "/").split("/")[-1].split(".")[0]
             dlines = "\n\n".join(preview.splitlines()[:3])
-            guess_sql = guess_sql_creation(table_name, default_sep,
-                           ".", has_header, dlines, default_quote)[2]
+            guess_sql = guess_sql_creation(table_name, default_sep, ".",
+                                           has_header, dlines,
+                                           default_quote)[2]
             fields_in = ['', ['csv Name', csv_file, 'r', 100], '',
                          ['table Name', table_name],
                          ['column separator', default_sep, 'w', 20],
@@ -754,7 +758,7 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
         selitem = self.db_tree.focus()  # get tree item having the focus
         if selitem != '':
             seltag = self.db_tree.item(selitem, "tag")[0]
-            if seltag == "run_up":  # if 'run-up', do as if dbl-click 1 level up
+            if seltag == "run_up":  # if 'run-up', do as dbl-click 1 level up
                 selitem = self.db_tree.parent(selitem)
             # get final information
             definition, query = self.db_tree.item(selitem, "values")
@@ -791,7 +795,7 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
             filetypes=[("default", "*.csv"), ("other", "*.txt"),
                        ("all", "*.*")])
         if csv_file != "":
-            # Request form (http://www.python-course.eu/tkinter_entry_widgets.php)
+            # Idea from (http://www.python-course.eu/tkinter_entry_widgets.php)
             fields = ['', ['csv Name', csv_file, 'r', 100], '',
                       ['column separator', default_sep],
                       ['Header line', True],
@@ -970,17 +974,17 @@ def guess_sql_creation(table_name, separ, decim, header, data, quoter='"'):
         dlines = list(csv.reader(data.replace('\n\n', '\n').splitlines(),
                       delimiter=str(separ), quotechar=str(quoter)))
     r, val = list(dlines[0]), list(dlines[1])
-    typ = ['TEXT']*len(r)  # default value is TEXT 
+    typ = ['TEXT']*len(r)  # default value is TEXT
     for i in range(len(r)):
         try:
-            float(val[i].replace(decim, '.'))  #  unless it can be a real
+            float(val[i].replace(decim, '.'))  # unless it can be a real
             typ[i] = 'REAL'
         except:
             checker = sqlite.connect(':memory:')
-            #avoid the false positive 'now'
-            val_not_now = val[i].replace('w','www').replace('W','WWW')                    
+            # avoid the false positive 'now'
+            val_not_now = val[i].replace('w', 'www').replace('W', 'WWW')
             test = "select datetime('{0}')".format(val_not_now)
-            try :
+            try:
                 if checker.execute(test).fetchall()[0][0]:
                     typ[i] = 'DATETIME'  # and unless SQLite can see a DATETIME
             except:
@@ -1238,7 +1242,7 @@ def get_leaves(conn, category, attached_db="", tbl=""):
 class Baresql():
     """a small wrapper around sqlite3 module"""
     def __init__(self, connection="", keep_log=False, cte_inline=True,
-                 isolation_level = None):
+                 isolation_level=None):
         self.dbname = connection.replace(":///", "://").replace(
             "sqlite://", "")
         self.conn = sqlite.connect(self.dbname,
@@ -1247,8 +1251,8 @@ class Baresql():
         self.conn_def = {}
         self.do_log = keep_log
         self.log = []
-        self.conn.isolation_level = isolation_level #commit experience
-        
+        self.conn.isolation_level = isolation_level  # commit experience
+
     def close(self):
         """close database and clear dictionnary of registered 'pydef'"""
         self.conn.close
@@ -1388,6 +1392,7 @@ class Baresql():
             sqls.append("".join(mysql))
         return sqls
 
+
 def _main():
     app = App()
     # start with a memory Database and a welcome
@@ -1438,6 +1443,6 @@ RELEASE SAVEPOINT remember_Neo; -- free memory
 """
     app.n.new_query_tab("Welcome", welcome_text)
     app.tk_win.mainloop()
-    
+
 if __name__ == '__main__':
     _main()    # create a tkk graphic interface with a main window tk_win
