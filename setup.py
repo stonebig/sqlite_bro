@@ -29,10 +29,10 @@ setup(
     url='https://github.com/stonebig/sqlite_bro',
     license='MIT license',
     py_modules=['sqlite_bro'],
-    #namespace_packages=[],
+    # namespace_packages=[],
     include_package_data=True,
-    #zip_safe=False,
-    #install_requires=[],
+    # zip_safe=False,
+    # install_requires=[],
     entry_points={
         'console_scripts': [
             'sqlite_bro = sqlite_bro:_main',
