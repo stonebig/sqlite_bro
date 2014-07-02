@@ -30,8 +30,8 @@ class App:
     """the GUI graphic application"""
     def __init__(self):
         """create a tkk graphic interface with a main window tk_win"""
-        self.__version__ = '0.8.4'
-        self._title = "2014-06-30a : 'Move your tabs !'"
+        self.__version__ = '0.8.5pre'
+        self._title = "2014-07-02a : 'Be OS agnostic !'"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.tk_win = Tk()
@@ -134,7 +134,7 @@ class App:
     def set_initialdir(self, proposal):
         """change initial dir, if possible"""
         if os.path.isfile(proposal):
-            self.initialdir = os.path.split(proposal)
+            self.initialdir = os.path.dirname(proposal)
 
     def new_db(self, filename=''):
         """create a new database"""
@@ -234,7 +234,7 @@ class App:
             title="Choose a database to attach ",
             filetypes=[("default", "*.db"), ("other", "*.db*"),
                        ("all", "*.*")])
-        attach = os.path.split(filename)[1].split(".")[0]
+        attach = os.path.basename(filename).split(".")[0]
         avoid = {i[1]: 0 for i in get_leaves(self.conn, 'attached_databases')}
         att, indice = attach, 0
         while attach in avoid:
@@ -261,7 +261,7 @@ class App:
         for node in self.db_tree.get_children():
             self.db_tree.delete(node)
         # create top node
-        dbtext = (self.database_file.replace("\\", "/")).split("/")[-1]
+        dbtext = os.path.basename(self.database_file)
         id0 = self.db_tree.insert(
             "", 0, "Database", text="main (%s)" % dbtext, values=(dbtext, ""))
         # add Database Objects, by Category
@@ -730,7 +730,7 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
 
             # Request form : List of Horizontal Frame names 'FramLabel'
             #   or fields : 'Label', 'InitialValue',['r' or 'w', Width, Height]
-            table_name = csv_file.replace("\\", "/").split("/")[-1].split(".")[0]
+            table_name = os.path.basename(csv_file).split(".")[0]
             dlines = "\n\n".join(preview.splitlines()[:3])
             guess_sql = guess_sql_creation(table_name, default_sep, ".",
                                            has_header, dlines,
