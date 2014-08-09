@@ -30,8 +30,8 @@ class App:
     """the GUI graphic application"""
     def __init__(self):
         """create a tkk graphic interface with a main window tk_win"""
-        self.__version__ = '0.8.5'
-        self._title = "2014-07-02b : 'Rename your tabs !'"
+        self.__version__ = '0.8.6'
+        self._title = "2014-08-09a : 'Committed to speed'"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.tk_win = Tk()
@@ -1182,6 +1182,8 @@ def import_csvtb_ok(thetop, entries, actions):
         except:  # minimal hack for 2.7
             reader = csv.reader(open(csv_file, 'r'),
                                 delimiter=str(separ), quotechar=str(quotechar))
+        # speed-up dead otherwise dead slow speed if not memory database
+        curs.execute('begin transaction')
         # read first_line if needed to skip headers
         if d['Header line']:
             row = next(reader)
