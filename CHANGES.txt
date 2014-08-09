@@ -2,6 +2,12 @@ Changelog
 =========
 
 
+2014-08-09a : v0.8.6 'Committed to speed'
+-----------------------------------------
+
+* use a transaction when importing a csv file
+
+
 2014-07-02b : v0.8.5 'Rename your tabs !'
 -----------------------------------------
 
@@ -66,19 +72,16 @@ Changelog
 * discover how to publish on Pypi (hard)
 
 
-
 2014-06-14c : "It's a long way to temporary !"
 ----------------------------------------------
 
 * works with  temporary tables
 
 
-
 2014-06-10a : 'Sanitizer of Python (xkcd.com/327)'
 --------------------------------------------------
 
 * imported python functions must be validated
-
 
 
 2014-06-09a : 'The magic 8th PEP'
@@ -129,12 +132,10 @@ Changelog
 * addition of Tooltips over icons
 
 
-
 2014-05-06
 ----------
 
 * addition of the Welcome Demo
-
 
 
 2014-05-01
