@@ -737,40 +737,22 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                        ("all", "*.*")])
         if csv_file != '':
             self.set_initialdir(csv_file)
-            # guess encoding
-            encodings = guess_encoding(csv_file)
-            # guess Header and delimiter
-            with io.open(csv_file, encoding=encodings[0]) as f:
-                preview = f.read(9999)
-                has_header = True
-                default_sep = ","
-                default_quote = '"'
-            try:
-                dialect = csv.Sniffer().sniff(preview)
-                has_header = csv.Sniffer().has_header(preview)
-                default_sep = dialect.delimiter
-                default_quote = Dialect.quotechar
-            except:
-                pass  # sniffer can fail
-            default_decim = [".", ","] if default_sep != ";" else [",", "."]
-
-            # Request form : List of Horizontal Frame names 'FramLabel'
-            #   or fields : 'Label', 'InitialValue',['r' or 'w', Width, Height]
-            table_name = os.path.basename(csv_file).split(".")[0]
-            dlines = "\n\n".join(preview.splitlines()[:3])
-            guess_sql = guess_sql_creation(table_name, default_sep, ".",
-                                           has_header, dlines,
-                                           default_quote)[2]
+            # guess all via an object
+            guess = guess_csv(csv_file)
+            guess_sql = guess_sql_creation(guess.table_name, guess.default_sep,
+                                           ".", guess.has_header, guess.dlines,
+                                           guess.default_quote)[2]
+            # check it via dialog box
             fields_in = ['', ['csv Name', csv_file, 'r', 100], '',
-                         ['table Name', table_name],
-                         ['column separator', default_sep, 'w', 20],
-                         ['string delimiter', default_quote, 'w', 20],
-                         '', ['Decimal separator', default_decim],
-                         ['Encoding', encodings],
-                         'Fliflaps', ['Header line', has_header],
+                         ['table Name', guess.table_name],
+                         ['column separator', guess.default_sep, 'w', 20],
+                         ['string delimiter', guess.default_quote, 'w', 20],
+                         '', ['Decimal separator', guess.default_decims],
+                         ['Encoding', guess.encodings],
+                         'Fliflaps', ['Header line', guess.has_header],
                          ['Create table', True],
                          ['Replace existing data', True], '',
-                         ['first 3 lines', dlines, 'r', 100, 10], '',
+                         ['first 3 lines', guess.dlines, 'r', 100, 10], '',
                          ['use manual creation request', False], '',
                          ['creation request', guess_sql, 'w', 100, 10]]
             actions = ([self.conn, self.actualize_db])
@@ -989,6 +971,29 @@ class NotebookForQueries():
         # switch the heading so that it will sort in the opposite direction
         tree.heading(col, command=lambda col=col:
                      self.sortby(tree, col, int(not descending)))
+
+
+class guess_csv():
+    """guess everything about a csv file of data to import in SQL"""
+    def __init__(self,  csv_file):
+        self.has_header = True
+        self.default_sep = ","
+        self.default_quote = '"'
+        self.encodings = guess_encoding(csv_file)
+        self.table_name = os.path.basename(csv_file).split(".")[0]
+        with io.open(csv_file, encoding=self.encodings[0]) as f:
+            self.preview = f.read(9999)
+            try:
+                dialect = csv.Sniffer().sniff(self.preview)
+                self.has_header = csv.Sniffer().has_header(self.preview)
+                self.default_sep = dialect.delimiter
+                self.default_quote = Dialect.quotechar
+            except:
+                pass  # sniffer can fail
+        self.default_decims = [".", ","] 
+        if self.default_sep == ";":
+            self.default_decims = [",", "."]
+        self.dlines = "\n\n".join(self.preview.splitlines()[:3])
 
 
 def guess_sql_creation(table_name, separ, decim, header, data, quoter='"'):
