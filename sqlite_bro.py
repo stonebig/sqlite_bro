@@ -32,7 +32,7 @@ class App:
     def __init__(self):
         """create a tkk graphic interface with a main window tk_win"""
         self.__version__ = '0.8.7pre'
-        self._title = "2014-08-27c : '.import / .export business"
+        self._title = "2014-08-27d : 'import once !"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.tk_win = Tk()
