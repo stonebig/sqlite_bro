@@ -31,7 +31,7 @@ class App:
     def __init__(self):
         """create a tkk graphic interface with a main window tk_win"""
         self.__version__ = '0.8.7pre'
-        self._title = "2014-08-27a : 'functional insert'"
+        self._title = "2014-08-27b : identify '.' commands"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.tk_win = Tk()
@@ -680,6 +680,9 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                 self.n.add_treeview(tab_tk_id, titles, rows, "Info", pydef)
                 if log is not None:  # write to logFile
                     log.write("\n".join(['("%s")' % r for r in rows])+"\n")
+            elif instru[:1] == "." :  # a shell command !
+                # handle a ".function" here !
+                now_what = 1
             elif instruction != "":
                 try:
                     cur = cu.execute(instruction)
@@ -1341,17 +1344,29 @@ class Baresql():
             'help': the_help, 'pydef': instruction}
         return instr_name
 
-    def get_tokens(self, sql, start=0):
-        """from given sql start position, yield tokens (value + token type)"""
+    def get_tokens(self, sql, start=0, shell_tokens = False):
+        """
+        from given sql start position, yield tokens (value + token type)
+        if shell_tokens is True, identify line shell_tokens as sqlite.exe does
+        """
         length = len(sql)
         i = start
+        can_be_shell_command = True
         token = 'TK_OTHER'
         dico = {' ': 'TK_SP', '\t': 'TK_SP', '\n': 'TK_SP', '\f': 'TK_SP',
                 '\r': 'TK_SP', '(': 'TK_LP', ')': 'TK_RP', ';': 'TK_SEMI',
                 ',': 'TK_COMMA', '/': 'TK_OTHER', "'": 'TK_STRING',
                 "-": 'TK_OTHER', '"': 'TK_STRING', "`": 'TK_STRING'}
         while length > start:
-            if sql[i] == "-" and i < length and sql[i:i+2] == "--":
+            if shell_tokens and can_be_shell_command and i < length and (
+                (sql[i] == "." and i == start) or 
+                (i > start and sql[i-1:i] == "\n.")):
+                    # a command line shell ! (supposed on one starting line)
+                    token = 'TK_SHELL'
+                    i = sql.find("\n", start)
+                    if i <= 0:
+                        i = length
+            elif sql[i] == "-" and i < length and sql[i:i+2] == "--":
                 # this Token is an end-of-line comment : --blabla
                 token = 'TK_COM'
                 i = sql.find("\n", start)
@@ -1394,6 +1409,10 @@ class Baresql():
                     if i < length:
                         i += 1
             yield sql[start:i], token
+            if token == 'TK_SEMI':  # a new sql order can be a new shell token
+                can_be_shell_command =  True
+            elif token not in ('TK_COM', 'TK_SP') :  # can't be a shell token
+                can_be_shell_command =  False   
             start = i
 
     def get_sqlsplit(self, sql, remove_comments=False):
@@ -1401,7 +1420,7 @@ class Baresql():
         trigger_mode = False
         sqls = []
         mysql = [""]
-        for tokv, token in self.get_tokens(sql):
+        for tokv, token in self.get_tokens(sql, shell_tokens = True):
             # clear comments option
             if token != 'TK_COM' or not remove_comments:
                 mysql.append(tokv)
@@ -1420,6 +1439,10 @@ class Baresql():
             elif (token == 'TK_SEMI' and not trigger_mode):
                 # end of a single sql
                 sqls.append("".join(mysql))
+                mysql = []
+            elif (token == 'TK_SHELL'):
+                # end of a shell order              
+                sqls.append("" + tokv)
                 mysql = []
         if mysql != []:
             sqls.append("".join(mysql))
