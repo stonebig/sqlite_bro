@@ -30,8 +30,8 @@ class App:
     """the GUI graphic application"""
     def __init__(self):
         """create a tkk graphic interface with a main window tk_win"""
-        self.__version__ = '0.8.6'
-        self._title = "2014-08-09a : 'Committed to speed'"
+        self.__version__ = '0.8.7pre'
+        self._title = "2014-08-27a : 'functional insert'"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.tk_win = Tk()
@@ -1165,45 +1165,45 @@ def import_csvtb_ok(thetop, entries, actions):
     # action
     if csv_file != "(none)" and len(csv_file)*len(table_name)*len(separ) > 1:
         thetop.destroy()
-        curs = conn.conn.cursor()
         # do initialization job
         sql, typ, head = guess_sql_creation(table_name, separ, decim,
                                             d['Header line'],
                                             d["first 3 lines"], quotechar)
-        if d['Create table']:
-            curs.execute('drop TABLE if exists "%s";' % table_name)
-            if d['use manual creation request']:
-                sql = ('CREATE TABLE "%s" (%s);' %
-                       (table_name, d["creation request"]))
-            curs.execute(sql)
-        if d['Replace existing data']:
-            curs.execute('delete from "%s";' % table_name)
-        sql = 'INSERT INTO "%s"  VALUES(%s);' % (table_name,
-                                                 ", ".join(["?"]*len(typ)))
+        if d['use manual creation request']:
+            sql = ('CREATE TABLE "%s" (%s);' %
+                   (table_name, d["creation request"]))
 
-        try:
-            reader = csv.reader(open(csv_file, 'r', encoding=d['Encoding']),
-                                delimiter=separ, quotechar=quotechar)
-        except:  # minimal hack for 2.7
-            reader = csv.reader(open(csv_file, 'r'),
-                                delimiter=str(separ), quotechar=str(quotechar))
-        # speed-up dead otherwise dead slow speed if not memory database
-        curs.execute('begin transaction')
-        # read first_line if needed to skip headers
-        if d['Header line']:
-            row = next(reader)
-        if decim != ".":  # one by one needed
-            for row in reader:
-                if not isinstance(row, (type('e'), type(u'e'))):
-                    for i in range(len(row)):
-                        row[i] = row[i].replace(decim, ".")
-                curs.execute(sql, row)
-        else:
-            curs.executemany(sql, reader)
-        conn.conn.commit()
+        # Create csv reader function and give it to insert
+        reading = read_this_csv(csv_file, d['Encoding'], separ,
+                                quotechar, d['Header line'], decim)
+
+        conn.insert_reader(reading, table_name, sql,
+                                create_table=d['Create table'],
+                                replace=d['Replace existing data']) 
+        # refresh                                 
         actualize_db()
 
-
+def read_this_csv(csv_file, encoding, delimiter , quotechar, header, decim):
+    """yield csv data records from a file """
+    # handle Python 2/3 
+    try:
+        reader = csv.reader(open(csv_file, 'r', encoding=encoding),
+                            delimiter=delimiter, quotechar=quotechar)
+    except:  # minimal hack for 2.7
+        reader = csv.reader(open(csv_file, 'r'),
+                            delimiter=str(delimiter), quotechar=str(quotechar))
+    # handle header
+    if header:
+        next(reader)
+    if decim == ".":  
+        return reader  # no treatment needed
+    # otherwise handle special decimal treatment
+    for row in reader:
+        if not isinstance(row, (type('e'), type(u'e'))):
+                for i in range(len(row)):
+                    row[i] = row[i].replace(decim, ".")
+        yield(row)
+    
 def export_csv_ok(thetop, entries, actions):
     """export a csv table (action)"""
     conn = actions[0]
@@ -1424,6 +1424,33 @@ class Baresql():
         if mysql != []:
             sqls.append("".join(mysql))
         return sqls
+
+    def insert_reader(self, reader, table_name, create_sql=None,
+                      create_table=True, replace=True, header=False):
+        """import a given csv reader into a given table"""
+        curs = self.conn.cursor()
+        # 1-do initialization job
+        # speed-up dead otherwise dead slow speed if not memory database
+        try:
+            curs.execute('begin transaction')
+        except:
+            pass
+        if create_sql and create_table:
+            curs.execute('drop TABLE if exists "%s";' % table_name)
+            curs.execute(create_sql)
+        if replace:
+            curs.execute('delete from "%s";' % table_name)
+        # count rows of target table
+        nbcol = len(curs.execute('pragma table_info("%s")' % table_name
+                             ).fetchall())
+        sql = 'INSERT INTO "%s" VALUES(%s);' % (table_name,
+                                                 ", ".join(["?"]*nbcol))
+        # read first_line if hasked to skip headers
+        if header:
+            next(reader)
+        # 2-push records
+        curs.executemany(sql, reader)
+        self.conn.commit()
 
 
 def _main():
