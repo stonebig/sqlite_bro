@@ -11,6 +11,7 @@ import csv
 import datetime
 import io
 import codecs
+import shlex  # Simple lexical analysis
 
 try:  # We are Python 3.3+
     from tkinter import *
@@ -31,7 +32,7 @@ class App:
     def __init__(self):
         """create a tkk graphic interface with a main window tk_win"""
         self.__version__ = '0.8.7pre'
-        self._title = "2014-08-27b : identify '.' commands"
+        self._title = "2014-08-27c : '.import / .export business"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.tk_win = Tk()
@@ -646,6 +647,7 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
         # stackoverflow.com/questions/15856976/transactions-with-python-sqlite3
         isolation = self.conn.conn.isolation_level
         counter = 0
+        shell_list =['','']
         if isolation == "":  # Sqlite3 and dump.py default don't match
             self.conn.conn.isolation_level = None  # right behavior
         cu = self.conn.conn.cursor()
@@ -682,22 +684,60 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                     log.write("\n".join(['("%s")' % r for r in rows])+"\n")
             elif instru[:1] == "." :  # a shell command !
                 # handle a ".function" here !
-                now_what = 1
+                # import FILE TABLE
+                shell_list = shlex.split(instru)  # magic standard library
+                try:
+                    if shell_list[0] == '.import' and len(shell_list) >= 2:
+                        csv_file = shell_list[1]
+                        guess = guess_csv(csv_file)
+                        if len(shell_list) >= 3:
+                            guess.table_name = shell_list[2]
+                        # Create csv reader and give it to import
+                        reading = read_this_csv(csv_file, guess.encodings[0],
+                           guess.default_sep, guess.default_quote,
+                           guess.has_header, guess.default_decims[0])
+                        guess_sql = guess_sql_creation(
+                            guess.table_name, guess.default_sep, ".",
+                            guess.has_header, guess.dlines,
+                            guess.default_quote)[0]
+                        self.conn.insert_reader(reading,
+                                           guess.table_name,
+                                           guess_sql)     
+                        self.n.add_treeview(tab_tk_id, ('table', 'file'),
+                           ((guess.table_name, csv_file),), "Info", first_line)
+                    if log is not None:  # write to logFile
+                        log.write('-- File %s imported in "%s"\n' % (
+                              csv_file, guess.table_name))
+                except IOError as err:
+                    msg = ("I/O error: {0}".format(err))
+                    self.n.add_treeview(tab_tk_id, ('Error !',), [(msg,)],
+                                        "Error !", instru)
+                    if log is not None:  # write to logFile
+                        log.write("Error ! %s : %s" % (msg, instru))
+                    sql_error = True
+                    break
             elif instruction != "":
                 try:
-                    cur = cu.execute(instruction)
-                    rows = cur.fetchall()
-                    # a query may have no result( like for an "update")
-                    if cur.description is not None:
-                        titles = [row_info[0] for row_info in cur.description]
-                        self.n.add_treeview(
-                            tab_tk_id, titles, rows, "Qry", first_line)
-                        if log is not None:  # write to logFile
-                            log.write(beurk(titles) + "\n")
-                            log.write("\n".join(
-                                [beurk(l) for l in rows[:limit]]) + "\n")
-                            if len(rows) > limit:
-                                log.write("...%s more..." % len((rows)-limit))
+                    if shell_list[0] == '.once':
+                        shell_list[0]= ' '
+                        self.conn.export_writer(instruction, shell_list[1])
+                        self.n.add_treeview(tab_tk_id, ('qry', 'file'),
+                           ((instruction, shell_list[1]),), "Info", '.')
+                    else:
+                        cur = cu.execute(instruction)
+                        rows = cur.fetchall()
+                        # a query may have no result( like for an "update")
+                        if cur.description is not None:
+                            titles = [row_info[0] for 
+                                      row_info in cur.description]
+                            self.n.add_treeview(
+                                tab_tk_id, titles, rows, "Qry", first_line)
+                            if log is not None:  # write to logFile
+                                log.write(beurk(titles) + "\n")
+                                log.write("\n".join(
+                                    [beurk(l) for l in rows[:limit]]) + "\n")
+                                if len(rows) > limit:
+                                    log.write("%s more..." % len((rows)-limit))
                 except sqlite.Error as msg:  # OperationalError
                     self.n.add_treeview(tab_tk_id, ('Error !',), [(msg,)],
                                         "Error !", first_line)
@@ -1198,38 +1238,26 @@ def read_this_csv(csv_file, encoding, delimiter , quotechar, header, decim):
     # handle header
     if header:
         next(reader)
-    if decim == ".":  
-        return reader  # no treatment needed
     # otherwise handle special decimal treatment
     for row in reader:
-        if not isinstance(row, (type('e'), type(u'e'))):
+        if decim != "." and not isinstance(row, (type('e'), type(u'e'))):
                 for i in range(len(row)):
                     row[i] = row[i].replace(decim, ".")
         yield(row)
     
 def export_csv_ok(thetop, entries, actions):
-    """export a csv table (action)"""
+    "export a csv table (action)"
     conn = actions[0]
     # build dico of result
     d = {f[0]: f[1]() for f in entries
          if not isinstance(f, (type('e'), type(u'e')))}
 
     csv_file = d['csv Name'].strip()
-    cursor = conn.conn.cursor()
-    cursor.execute(d["Data to export (MUST be 1 Request)"])
-    thetop.destroy()
-    if sys.version_info[0] != 2:  # python3
-        fout = io.open(csv_file, 'w', newline='', encoding=d['Encoding'])
-        writer = csv.writer(fout, delimiter=d['column separator'],
-                            quotechar='"', quoting=csv.QUOTE_MINIMAL)
-    else:  # python2.7 (minimal)
-        fout = io.open(csv_file, 'wb')
-        writer = csv.writer(fout, delimiter=str(d['column separator']),
-                            quotechar=str('"'), quoting=csv.QUOTE_MINIMAL)
-    if d['Header line']:
-            writer.writerow([i[0] for i in cursor.description])  # heading row
-    writer.writerows(cursor.fetchall())
-    fout.close
+    conn.export_writer(d["Data to export (MUST be 1 Request)"], csv_file,
+                      header=d['Header line'],
+                      delimiter=d['column separator'],
+                      encoding=d['Encoding'],
+                      quotechar='"')
 
 
 def get_leaves(conn, category, attached_db="", tbl=""):
@@ -1475,6 +1503,23 @@ class Baresql():
         curs.executemany(sql, reader)
         self.conn.commit()
 
+    def export_writer(self, sql, csv_file, header=True,
+                      delimiter=',', encoding='utf-8', quotechar='"'):
+        """export a csv table (action)"""
+        cursor = self.conn.cursor()
+        cursor.execute(sql)
+        if sys.version_info[0] != 2:  # python3
+            fout = io.open(csv_file, 'w', newline='', encoding=encoding)
+            writer = csv.writer(fout, delimiter=delimiter,
+                            quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        else:  # python2.7 (minimal)
+            fout = io.open(csv_file, 'wb')
+            writer = csv.writer(fout, delimiter=delimiter,
+                            quotechar=str('"'), quoting=csv.QUOTE_MINIMAL)
+        if header:
+            writer.writerow([i[0] for i in cursor.description])  # heading row
+        writer.writerows(cursor.fetchall())
+        fout.close
 
 def _main():
     app = App()
@@ -1523,6 +1568,13 @@ SELECT ItemNo, Description FROM Item; -- see things done
 ROLLBACK TO SAVEPOINT remember_Neo; -- go back to savepoint state
 SELECT ItemNo, Description FROM Item;  -- see all is back to normal
 RELEASE SAVEPOINT remember_Neo; -- free memory
+\n\n-- '.' commands understood : 
+-- .once FILENAME         Output for the next SQL command only to FILENAME
+-- .import FILE TABLE     Import data from FILE into TABLE
+.once 'this_file_of_result.txt'
+select ItemNo, Description from item order by ItemNo desc;
+.import 'this_file_of_result.txt' in_this_table
+
 """
     app.n.new_query_tab("Welcome", welcome_text)
     app.tk_win.mainloop()
