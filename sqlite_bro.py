@@ -647,7 +647,7 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
         # stackoverflow.com/questions/15856976/transactions-with-python-sqlite3
         isolation = self.conn.conn.isolation_level
         counter = 0
-        shell_list =['','']
+        shell_list = ['', '']
         if isolation == "":  # Sqlite3 and dump.py default don't match
             self.conn.conn.isolation_level = None  # right behavior
         cu = self.conn.conn.cursor()
@@ -682,7 +682,7 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                 self.n.add_treeview(tab_tk_id, titles, rows, "Info", pydef)
                 if log is not None:  # write to logFile
                     log.write("\n".join(['("%s")' % r for r in rows])+"\n")
-            elif instru[:1] == "." :  # a shell command !
+            elif instru[:1] == ".":  # a shell command !
                 # handle a ".function" here !
                 # import FILE TABLE
                 shell_list = shlex.split(instru)  # magic standard library
@@ -693,24 +693,26 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                         if len(shell_list) >= 3:
                             guess.table_name = shell_list[2]
                         # Create csv reader and give it to import
-                        reading = read_this_csv(csv_file, guess.encodings[0],
-                           guess.default_sep, guess.default_quote,
-                           guess.has_header, guess.default_decims[0])
-                        guess_sql = guess_sql_creation(
-                            guess.table_name, guess.default_sep, ".",
-                            guess.has_header, guess.dlines,
-                            guess.default_quote)[0]
-                        self.conn.insert_reader(reading,
-                                     guess.table_name,
-                                     guess_sql,
-                                     create_table=False,  #sqlite.exe default
-                                     replace=False  # sqlite.exe default
-                                     )     
+                        reading = read_this_csv(csv_file,
+                                                guess.encodings[0],
+                                                guess.default_sep,
+                                                guess.default_quote,
+                                                guess.has_header,
+                                                guess.default_decims[0])
+                        guess_sql = guess_sql_creation(guess.table_name,
+                                                       guess.default_sep, ".",
+                                                       guess.has_header,
+                                                       guess.dlines,
+                                                       guess.default_quote)[0]
+                        self.conn.insert_reader(reading, guess.table_name,
+                                                guess_sql, create_table=False,
+                                                replace=False)
                         self.n.add_treeview(tab_tk_id, ('table', 'file'),
-                           ((guess.table_name, csv_file),), "Info", first_line)
+                                            ((guess.table_name, csv_file),),
+                                            "Info", first_line)
                     if log is not None:  # write to logFile
                         log.write('-- File %s imported in "%s"\n' % (
-                              csv_file, guess.table_name))
+                                  csv_file, guess.table_name))
                 except IOError as err:
                     msg = ("I/O error: {0}".format(err))
                     self.n.add_treeview(tab_tk_id, ('Error !',), [(msg,)],
@@ -722,16 +724,17 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
             elif instruction != "":
                 try:
                     if shell_list[0] == '.once':
-                        shell_list[0]= ' '
+                        shell_list[0] = ' '
                         self.conn.export_writer(instruction, shell_list[1])
                         self.n.add_treeview(tab_tk_id, ('qry', 'file'),
-                           ((instruction, shell_list[1]),), "Info", '.')
+                                            ((instruction, shell_list[1]),),
+                                            "Info", '.')
                     else:
                         cur = cu.execute(instruction)
                         rows = cur.fetchall()
                         # a query may have no result( like for an "update")
                         if cur.description is not None:
-                            titles = [row_info[0] for 
+                            titles = [row_info[0] for
                                       row_info in cur.description]
                             self.n.add_treeview(
                                 tab_tk_id, titles, rows, "Qry", first_line)
@@ -1036,7 +1039,7 @@ class guess_csv():
                 self.default_quote = Dialect.quotechar
             except:
                 pass  # sniffer can fail
-        self.default_decims = [".", ","] 
+        self.default_decims = [".", ","]
         if self.default_sep == ";":
             self.default_decims = [",", "."]
         self.dlines = "\n\n".join(self.preview.splitlines()[:3])
@@ -1224,14 +1227,15 @@ def import_csvtb_ok(thetop, entries, actions):
                                 quotechar, d['Header line'], decim)
 
         conn.insert_reader(reading, table_name, sql,
-                                create_table=d['Create table'],
-                                replace=d['Replace existing data']) 
-        # refresh                                 
+                           create_table=d['Create table'],
+                           replace=d['Replace existing data'])
+        # refresh                            
         actualize_db()
+
 
 def read_this_csv(csv_file, encoding, delimiter , quotechar, header, decim):
     """yield csv data records from a file """
-    # handle Python 2/3 
+    # handle Python 2/3
     try:
         reader = csv.reader(open(csv_file, 'r', encoding=encoding),
                             delimiter=delimiter, quotechar=quotechar)
@@ -1247,7 +1251,8 @@ def read_this_csv(csv_file, encoding, delimiter , quotechar, header, decim):
                 for i in range(len(row)):
                     row[i] = row[i].replace(decim, ".")
         yield(row)
-    
+
+
 def export_csv_ok(thetop, entries, actions):
     "export a csv table (action)"
     conn = actions[0]
@@ -1257,10 +1262,10 @@ def export_csv_ok(thetop, entries, actions):
 
     csv_file = d['csv Name'].strip()
     conn.export_writer(d["Data to export (MUST be 1 Request)"], csv_file,
-                      header=d['Header line'],
-                      delimiter=d['column separator'],
-                      encoding=d['Encoding'],
-                      quotechar='"')
+                       header=d['Header line'],
+                       delimiter=d['column separator'],
+                       encoding=d['Encoding'],
+                       quotechar='"')
 
 
 def get_leaves(conn, category, attached_db="", tbl=""):
@@ -1375,7 +1380,7 @@ class Baresql():
             'help': the_help, 'pydef': instruction}
         return instr_name
 
-    def get_tokens(self, sql, start=0, shell_tokens = False):
+    def get_tokens(self, sql, start=0, shell_tokens=False):
         """
         from given sql start position, yield tokens (value + token type)
         if shell_tokens is True, identify line shell_tokens as sqlite.exe does
@@ -1390,13 +1395,13 @@ class Baresql():
                 "-": 'TK_OTHER', '"': 'TK_STRING', "`": 'TK_STRING'}
         while length > start:
             if shell_tokens and can_be_shell_command and i < length and (
-                (sql[i] == "." and i == start) or 
-                (i > start and sql[i-1:i] == "\n.")):
-                    # a command line shell ! (supposed on one starting line)
-                    token = 'TK_SHELL'
-                    i = sql.find("\n", start)
-                    if i <= 0:
-                        i = length
+               (sql[i] == "." and i == start) or
+               (i > start and sql[i-1:i] == "\n.")):
+                # a command line shell ! (supposed on one starting line)
+                token = 'TK_SHELL'
+                i = sql.find("\n", start)
+                if i <= 0:
+                    i = length
             elif sql[i] == "-" and i < length and sql[i:i+2] == "--":
                 # this Token is an end-of-line comment : --blabla
                 token = 'TK_COM'
@@ -1441,9 +1446,9 @@ class Baresql():
                         i += 1
             yield sql[start:i], token
             if token == 'TK_SEMI':  # a new sql order can be a new shell token
-                can_be_shell_command =  True
-            elif token not in ('TK_COM', 'TK_SP') :  # can't be a shell token
-                can_be_shell_command =  False   
+                can_be_shell_command = True
+            elif token not in ('TK_COM', 'TK_SP'):  # can't be a shell token
+                can_be_shell_command = False
             start = i
 
     def get_sqlsplit(self, sql, remove_comments=False):
@@ -1451,7 +1456,7 @@ class Baresql():
         trigger_mode = False
         sqls = []
         mysql = [""]
-        for tokv, token in self.get_tokens(sql, shell_tokens = True):
+        for tokv, token in self.get_tokens(sql, shell_tokens=True):
             # clear comments option
             if token != 'TK_COM' or not remove_comments:
                 mysql.append(tokv)
@@ -1472,7 +1477,7 @@ class Baresql():
                 sqls.append("".join(mysql))
                 mysql = []
             elif (token == 'TK_SHELL'):
-                # end of a shell order              
+                # end of a shell order       
                 sqls.append("" + tokv)
                 mysql = []
         if mysql != []:
@@ -1490,17 +1495,17 @@ class Baresql():
         except:
             pass
         # check if table exists
-        tell_me = curs.execute('PRAGMA table_info("%s")' % table_name).fetchall() 
-        if create_sql and (create_table or len(tell_me) == 0) :
+        here = curs.execute('PRAGMA table_info("%s")' % table_name).fetchall()
+        if create_sql and (create_table or len(here) == 0):
             curs.execute('drop TABLE if exists "%s";' % table_name)
             curs.execute(create_sql)
         if replace:
             curs.execute('delete from "%s";' % table_name)
         # count rows of target table
         nbcol = len(curs.execute('pragma table_info("%s")' % table_name
-                             ).fetchall())
+                   ).fetchall())
         sql = 'INSERT INTO "%s" VALUES(%s);' % (table_name,
-                                                 ", ".join(["?"]*nbcol))
+                                                ", ".join(["?"]*nbcol))
         # read first_line if hasked to skip headers
         if header:
             next(reader)
@@ -1516,15 +1521,16 @@ class Baresql():
         if sys.version_info[0] != 2:  # python3
             fout = io.open(csv_file, 'w', newline='', encoding=encoding)
             writer = csv.writer(fout, delimiter=delimiter,
-                            quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                                quotechar='"', quoting=csv.QUOTE_MINIMAL)
         else:  # python2.7 (minimal)
             fout = io.open(csv_file, 'wb')
             writer = csv.writer(fout, delimiter=delimiter,
-                            quotechar=str('"'), quoting=csv.QUOTE_MINIMAL)
+                                quotechar=str('"'), quoting=csv.QUOTE_MINIMAL)
         if header:
             writer.writerow([i[0] for i in cursor.description])  # heading row
         writer.writerows(cursor.fetchall())
         fout.close
+
 
 def _main():
     app = App()
@@ -1573,7 +1579,7 @@ SELECT ItemNo, Description FROM Item; -- see things done
 ROLLBACK TO SAVEPOINT remember_Neo; -- go back to savepoint state
 SELECT ItemNo, Description FROM Item;  -- see all is back to normal
 RELEASE SAVEPOINT remember_Neo; -- free memory
-\n\n-- '.' commands understood : 
+\n\n-- '.' commands understood:
 -- .once FILENAME         Output for the next SQL command only to FILENAME
 -- .import FILE TABLE     Import data from FILE into TABLE
 -- (create table only if it doesn't exist, keep existing records)
