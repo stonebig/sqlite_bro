@@ -31,8 +31,8 @@ class App:
     """the GUI graphic application"""
     def __init__(self):
         """create a tkk graphic interface with a main window tk_win"""
-        self.__version__ = '0.8.7pre'
-        self._title = "2014-08-27d : 'import once !"
+        self.__version__ = '0.8.7'
+        self._title = "2014-09-03a : '.Import this !"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.tk_win = Tk()
@@ -701,8 +701,11 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                             guess.has_header, guess.dlines,
                             guess.default_quote)[0]
                         self.conn.insert_reader(reading,
-                                           guess.table_name,
-                                           guess_sql)     
+                                     guess.table_name,
+                                     guess_sql,
+                                     create_table=False,  #sqlite.exe default
+                                     replace=False  # sqlite.exe default
+                                     )     
                         self.n.add_treeview(tab_tk_id, ('table', 'file'),
                            ((guess.table_name, csv_file),), "Info", first_line)
                     if log is not None:  # write to logFile
@@ -1486,7 +1489,9 @@ class Baresql():
             curs.execute('begin transaction')
         except:
             pass
-        if create_sql and create_table:
+        # check if table exists
+        tell_me = curs.execute('PRAGMA table_info("%s")' % table_name).fetchall() 
+        if create_sql and (create_table or len(tell_me) == 0) :
             curs.execute('drop TABLE if exists "%s";' % table_name)
             curs.execute(create_sql)
         if replace:
@@ -1571,6 +1576,7 @@ RELEASE SAVEPOINT remember_Neo; -- free memory
 \n\n-- '.' commands understood : 
 -- .once FILENAME         Output for the next SQL command only to FILENAME
 -- .import FILE TABLE     Import data from FILE into TABLE
+-- (create table only if it doesn't exist, keep existing records)
 .once 'this_file_of_result.txt'
 select ItemNo, Description from item order by ItemNo desc;
 .import 'this_file_of_result.txt' in_this_table
