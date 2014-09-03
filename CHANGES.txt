@@ -2,6 +2,12 @@ Changelog
 =========
 
 
+2014-09-03c : v0.8.7.2 '.Import this !'
+---------------------------------------
+
+* '.once' default encoding is 'utf-8-sig' on windows
+
+
 2014-09-03b : v0.8.7.1 '.Import this !'
 ---------------------------------------
 

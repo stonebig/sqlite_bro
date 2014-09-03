@@ -31,8 +31,8 @@ class App:
     """the GUI graphic application"""
     def __init__(self):
         """create a tkk graphic interface with a main window tk_win"""
-        self.__version__ = '0.8.7.1'
-        self._title = "2014-09-03b : '.Import this !"
+        self.__version__ = '0.8.7.2'
+        self._title = "2014-09-03c : '.Import this !"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.tk_win = Tk()
@@ -725,7 +725,9 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                 try:
                     if shell_list[0] == '.once':
                         shell_list[0] = ' '
-                        self.conn.export_writer(instruction, shell_list[1])
+                        encode_in = 'utf-8-sig' if os.name == 'nt' else 'utf-8'
+                        self.conn.export_writer(instruction, shell_list[1],
+                                                encoding=encode_in)
                         self.n.add_treeview(tab_tk_id, ('qry', 'file'),
                                             ((instruction, shell_list[1]),),
                                             "Info", '.')
