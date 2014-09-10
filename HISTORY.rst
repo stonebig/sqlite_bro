@@ -2,6 +2,12 @@ Changelog
 =========
 
 
+2014-09-10a : v0.8.7.3 '.Import this !'
+---------------------------------------
+
+* wheel packaging format on pypi.org (no user code change)
+
+
 2014-09-03c : v0.8.7.2 '.Import this !'
 ---------------------------------------
 

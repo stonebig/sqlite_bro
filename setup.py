@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement
+import os
 from setuptools import setup
-
 
 def get_version():
     with open('sqlite_bro.py') as f:
@@ -9,21 +9,19 @@ def get_version():
             if line.strip().startswith('self.__version__'):
                 return eval(line.split('=')[-1])
 
-
-def get_long_description():
-    descr = []
-    for fname in 'README.rst', 'CHANGES.txt':
-        with open(fname) as f:
-            descr.append(f.read())
-    return '\n\n'.join(descr)
-
+def read(*paths):
+    """Build a file path from *paths* and return the contents."""
+    with open(os.path.join(*paths), 'r') as f:
+        return f.read()
 
 setup(
     name='sqlite_bro',
     version=get_version(),
     description="a graphic SQLite Client in 1 Python file",
-    long_description=get_long_description(),
-    keywords=['sqlite', 'gui', 'ttk'],
+
+    long_description=(read('README.rst') + '\n\n' +
+                      read('HISTORY.rst')),
+    keywords=['sqlite', 'gui', 'ttk', 'sql'],
     author='stonebig',
     author_email='write_pull_requests_to_stonebig@github.com',
     url='https://github.com/stonebig/sqlite_bro',
@@ -46,7 +44,9 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
         'Topic :: Scientific/Engineering :: Information Analysis',
     ]
 )
