@@ -31,8 +31,8 @@ class App:
     """the GUI graphic application"""
     def __init__(self):
         """create a tkk graphic interface with a main window tk_win"""
-        self.__version__ = '0.8.7.3'
-        self._title = "2014-09-10a : '.Import this !"
+        self.__version__ = '0.8.7.4'
+        self._title = "2014-09-10b : '.Import this !"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.tk_win = Tk()
@@ -1526,7 +1526,7 @@ class Baresql():
                                 quotechar='"', quoting=csv.QUOTE_MINIMAL)
         else:  # python2.7 (minimal)
             fout = io.open(csv_file, 'wb')
-            writer = csv.writer(fout, delimiter=delimiter,
+            writer = csv.writer(fout, delimiter=str(delimiter),
                                 quotechar=str('"'), quoting=csv.QUOTE_MINIMAL)
         if header:
             writer.writerow([i[0] for i in cursor.description])  # heading row
