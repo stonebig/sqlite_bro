@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement
 import os
-from setuptools import setup
+from setuptools import find_packages, setup, Extension
 
 def get_version():
     with open('sqlite_bro.py') as f:
