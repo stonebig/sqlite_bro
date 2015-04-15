@@ -3,10 +3,9 @@ from __future__ import with_statement
 import os
 from setuptools import find_packages, setup, Extension
 
-packages = find_packages(exclude=('testsall',))
 
 def get_version():
-    with open('sqlite_bro.py') as f:
+    with open(os.path.join('sqlite_bro','sqlite_bro.py')) as f:
         for line in f:
             if line.strip().startswith('self.__version__'):
                 return eval(line.split('=')[-1])
@@ -28,15 +27,16 @@ setup(
     author_email='write_pull_requests_to_stonebig@github.com',
     url='https://github.com/stonebig/sqlite_bro',
     license='MIT license',
-    py_modules=['sqlite_bro'],
-    packages=packages,
+    #py_modules=['sqlite_bro'],
+    packages=['sqlite_bro', 'sqlite_bro.tests'],
+    # package_dir={"sqlite_bro": "sqlite_bro"},
     # namespace_packages=[],
     include_package_data=True,
     # zip_safe=False,
     # install_requires=[],
     entry_points={
         'console_scripts': [
-            'sqlite_bro = sqlite_bro:_main',
+            'sqlite_bro = sqlite_bro.sqlite_bro:_main',
         ],
     },
     classifiers=[

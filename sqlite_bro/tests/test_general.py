@@ -4,4 +4,4 @@ from nose.tools import assert_equal
 
 def test_DeBase():
     "learning the ropes"
-    assert_equal(1 == 1)
+    assert_equal(1 , 1)
