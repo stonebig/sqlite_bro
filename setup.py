@@ -3,6 +3,8 @@ from __future__ import with_statement
 import os
 from setuptools import find_packages, setup, Extension
 
+packages = find_packages(exclude=('testsall',))
+
 def get_version():
     with open('sqlite_bro.py') as f:
         for line in f:
@@ -27,6 +29,7 @@ setup(
     url='https://github.com/stonebig/sqlite_bro',
     license='MIT license',
     py_modules=['sqlite_bro'],
+    packages=packages,
     # namespace_packages=[],
     include_package_data=True,
     # zip_safe=False,
