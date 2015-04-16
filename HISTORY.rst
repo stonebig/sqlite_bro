@@ -2,6 +2,14 @@ Changelog
 =========
 
 
+2015-04-16a : v0.8.8 'Continuous Integration !'
+-------------------------------------------------
+
+* re-structure as a package for Appveyor Continuous Integration tests
+
+* include a global test
+
+
 2014-09-10b : v0.8.7.4 '.Import this !'
 ---------------------------------------
 

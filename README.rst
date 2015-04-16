@@ -18,7 +18,7 @@ Features
 
 * Support of sql-embedded Python functions
 
-* Easy to distribute : 1 Python source file, 2.7/3.3+ compatible
+* Easy to distribute : 1 Python source file, 2.7/3.4+ compatible
 
 * Easy to start : just launch sqlite_bro
 
@@ -35,8 +35,7 @@ You can install, upgrade, uninstall sqlite_bro.py with these commands::
   $ pip install --upgrade sqlite_bro
   $ pip uninstall sqlite_bro
 
-or just launch it from IPython with %load https://raw.githubusercontent.com/stonebig/sqlite_bro/master/sqlite_bro.py
-
+or just launch latest version from IPython with %load https://raw.githubusercontent.com/stonebig/sqlite_bro/master/sqlite_bro/sqlite_bro.py
 or just copy the file 'sqlite_bro.py' to any pc (with python installed)
 
 Example usage 
