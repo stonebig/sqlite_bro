@@ -20,8 +20,7 @@ setup(
     version=get_version(),
     description="a graphic SQLite Client in 1 Python file",
 
-    long_description=(read('README.rst') + '\n\n' +
-                      read('HISTORY.rst')),
+    long_description=(read('README.rst')),
     keywords=['sqlite', 'gui', 'ttk', 'sql'],
     author='stonebig',
     author_email='write_pull_requests_to_stonebig@github.com',
