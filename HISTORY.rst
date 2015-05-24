@@ -2,6 +2,14 @@ Changelog
 =========
 
 
+2015-05-24a : v0.8.9 'Yield !'
+------------------------------
+
+* re-structure sql splitting as a generator instead of a list
+
+* remove too long history from pypi front page
+
+
 2015-04-16a : v0.8.8 'Continuous Integration !'
 -------------------------------------------------
 
