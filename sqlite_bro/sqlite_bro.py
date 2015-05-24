@@ -670,8 +670,8 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                 log.write(bip(counter))
                 log.write(instruction)
                 log.write("\n")
-            instru = self.conn.get_sqlsplit(instruction,
-                                            remove_comments=True)[0]
+            instru = next(self.conn.get_sqlsplit(instruction,
+                                            remove_comments=True))
             instru = instru.replace(";", "").strip(' \t\n\r')
             first_line = (instru + "\n").splitlines()[0]
             if instru[:5] == "pydef":
@@ -1454,9 +1454,8 @@ class Baresql():
             start = i
 
     def get_sqlsplit(self, sql, remove_comments=False):
-        """split an sql file in list of separated sql orders"""
+        """yield a list of separated sql orders from a sql file"""
         trigger_mode = False
-        sqls = []
         mysql = [""]
         for tokv, token in self.get_tokens(sql, shell_tokens=True):
             # clear comments option
@@ -1476,15 +1475,14 @@ class Baresql():
                         trigger_mode = False
             elif (token == 'TK_SEMI' and not trigger_mode):
                 # end of a single sql
-                sqls.append("".join(mysql))
+                yield "".join(mysql)
                 mysql = []
             elif (token == 'TK_SHELL'):
                 # end of a shell order       
-                sqls.append("" + tokv)
+                yield("" + tokv)
                 mysql = []
         if mysql != []:
-            sqls.append("".join(mysql))
-        return sqls
+            yield("".join(mysql))
 
     def insert_reader(self, reader, table_name, create_sql=None,
                       create_table=True, replace=True, header=False):
