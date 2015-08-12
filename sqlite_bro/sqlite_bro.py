@@ -71,6 +71,9 @@ class App:
         # create a  notebook 'n' inside the right 'Queries' Frame
         self.n = NotebookForQueries(self.tk_win, f_queries, [])
 
+        # Bind keyboard shortcuts
+        self.tk_win.bind('<F9>', self.run_tab)
+
     def create_menu(self):
         """create the menu of the application"""
         menubar = Menu(self.tk_win)
@@ -290,7 +293,7 @@ class App:
                                icon='question', title='Quiting'):
             self.tk_win.destroy()
 
-    def run_tab(self):
+    def run_tab(self, event=None):
         """clear previous results and run current script of a tab"""
         active_tab_id = self.n.notebook.select()
         if active_tab_id != '':
@@ -1231,7 +1234,7 @@ def import_csvtb_ok(thetop, entries, actions):
         conn.insert_reader(reading, table_name, sql,
                            create_table=d['Create table'],
                            replace=d['Replace existing data'])
-        # refresh                            
+        # refresh
         actualize_db()
 
 
@@ -1478,7 +1481,7 @@ class Baresql():
                 yield "".join(mysql)
                 mysql = []
             elif (token == 'TK_SHELL'):
-                # end of a shell order       
+                # end of a shell order
                 yield("" + tokv)
                 mysql = []
         if mysql != []:
