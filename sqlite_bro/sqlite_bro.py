@@ -31,8 +31,8 @@ class App:
     """the GUI graphic application"""
     def __init__(self):
         """create a tkk graphic interface with a main window tk_win"""
-        self.__version__ = '0.8.9'
-        self._title = "2015-05-25a : 'Yield !'"
+        self.__version__ = '0.8.10'
+        self._title = "2015-08-12a : 'F9 runs !'"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.tk_win = Tk()
@@ -733,7 +733,7 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                                                 encoding=encode_in)
                         self.n.add_treeview(tab_tk_id, ('qry', 'file'),
                                             ((instruction, shell_list[1]),),
-                                            "Info", '.')
+                                            "Info", ".once %s" % shell_list[1])
                     else:
                         cur = cu.execute(instruction)
                         rows = cur.fetchall()

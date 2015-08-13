@@ -2,6 +2,12 @@ Changelog
 =========
 
 
+2015-08-12a : v0.8.10 'F9 runs !'
+---------------------------------
+
+* clicking on 'F9' key will run current selected instructions (patch by Yuxiang Wang)
+
+
 2015-05-24a : v0.8.9 'Yield !'
 ------------------------------
 
