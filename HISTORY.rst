@@ -2,6 +2,14 @@ Changelog
 =========
 
 
+2016-03-06a : v0.8.11 'Combine Functions!'
+------------------------------------------
+
+* add a combining of functions example: 'py_func1(1*py_func2)', not 'py_func1(py_func2)' 
+
+* fixed a nasty tokenizer issue
+
+
 2015-08-12a : v0.8.10 'F9 runs !'
 ---------------------------------
 

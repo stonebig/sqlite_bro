@@ -31,8 +31,8 @@ class App:
     """the GUI graphic application"""
     def __init__(self):
         """create a tkk graphic interface with a main window tk_win"""
-        self.__version__ = '0.8.10'
-        self._title = "2015-08-12a : 'F9 runs !'"
+        self.__version__ = '0.8.11'
+        self._title = "2016-03-06a : 'Combine Functions!'"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.tk_win = Tk()
@@ -1393,12 +1393,12 @@ class Baresql():
         length = len(sql)
         i = start
         can_be_shell_command = True
-        token = 'TK_OTHER'
         dico = {' ': 'TK_SP', '\t': 'TK_SP', '\n': 'TK_SP', '\f': 'TK_SP',
                 '\r': 'TK_SP', '(': 'TK_LP', ')': 'TK_RP', ';': 'TK_SEMI',
                 ',': 'TK_COMMA', '/': 'TK_OTHER', "'": 'TK_STRING',
                 "-": 'TK_OTHER', '"': 'TK_STRING', "`": 'TK_STRING'}
         while length > start:
+            token = 'TK_OTHER'
             if shell_tokens and can_be_shell_command and i < length and (
                (sql[i] == "." and i == start) or
                (i > start and sql[i-1:i] == "\n.")):
@@ -1541,11 +1541,14 @@ def _main():
     app.new_db(":memory:")
     welcome_text = """-- SQLite Memo (Demo = click on green "->" and "@" icons)
 \n-- to CREATE a table 'items' and a table 'parts' :
-create table item (ItemNo, Description,Kg  , PRIMARY KEY (ItemNo));
-create table part(ParentNo, ChildNo , Description TEXT , Qty_per REAL);
+DROP TABLE IF EXISTS item; DROP TABLE IF EXISTS part;
+CREATE TABLE item (ItemNo, Description,Kg  , PRIMARY KEY (ItemNo));
+CREATE TABLE part(ParentNo, ChildNo , Description TEXT , Qty_per REAL);
 \n-- to CREATE an index :
+DROP INDEX IF EXISTS parts_id1;
 CREATE INDEX parts_id1 ON part(ParentNo Asc, ChildNo Desc);
--- to CREATE a view 'v1':
+\n-- to CREATE a view 'v1':
+DROP VIEW IF EXISTS v1;
 CREATE VIEW v1 as select * from item inner join part as p ON ItemNo=p.ParentNo;
 \n-- to INSERT datas
 INSERT INTO item values("T","Ford",1000);
@@ -1560,8 +1563,12 @@ pydef py_fib(n):
    "fibonacci : example with function call (may only be internal) "
    fib = lambda n: n if n < 2 else fib(n-1) + fib(n-2)
    return("%s" % fib(n*1));
-\n-- to USE a python embedded function :
-select py_sin(1) as sinus_1, py_fib(8) as fib_8, sqlite_version() ;
+pydef py_power(x,y):
+    "power function : example loading module, handling input/output as strings"
+    import math as py_math
+    return ("%s" %  ((x*1) ** (y*1)) );
+\n-- to USE a python embedded function and nesting of embedded functions:
+select py_sin(1) as sinus, py_power(2, 1*py_fib(6)) as power, sqlite_version();
 \n-- to EXPORT :
 --    a TABLE, select TABLE, then click on icon 'SQL->CSV'
 --    a QUERY RESULT, select the SCRIPT text, then click on icon '???->CSV',
