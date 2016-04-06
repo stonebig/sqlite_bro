@@ -31,6 +31,7 @@ Installation
 
 You can install, upgrade, uninstall sqlite_bro.py with these commands::
 
+  $ apt-get install python3-tk # apt-get install python-tk if you are using python2
   $ pip install sqlite_bro
   $ pip install --upgrade sqlite_bro
   $ pip uninstall sqlite_bro
