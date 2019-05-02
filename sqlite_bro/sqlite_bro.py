@@ -31,8 +31,8 @@ class App:
     """the GUI graphic application"""
     def __init__(self):
         """create a tkk graphic interface with a main window tk_win"""
-        self.__version__ = '0.8.11'
-        self._title = "2016-03-06a : 'Combine Functions!'"
+        self.__version__ = '0.9.0'
+        self._title = "2019-04-02a : 'De-duplicate column names!'"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.tk_win = Tk()
@@ -1076,6 +1076,13 @@ def guess_sql_creation(table_name, separ, decim, header, data, quoter='"'):
                 pass
             checker.close
     if header:
+        # de-duplicate column names, if needed by pastixing with '_'+number
+        for i in  range(len(r)):
+            if r[i] in r[:i] :
+                j=1
+                while r[i]+'_'+str(j) in  r[:i] + r[i+1:]:
+                    j +=1
+                r[i]+= '_'+str(j)
         head = ",\n".join([('"%s" %s' % (r[i], typ[i]))
                            for i in range(len(r))])
         sql_crea = ('CREATE TABLE "%s" (%s);' % (table_name, head))

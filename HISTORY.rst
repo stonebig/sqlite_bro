@@ -2,6 +2,11 @@ Changelog
 =========
 
 
+2019-05-02a : v0.9.0 'De-duplicate column names!'
+-------------------------------------------------
+
+* header columns  in a .csv file are de-duplicated to avoid error: 'a', 'a', 'a_1' becomes 'a', 'a_2', 'a_1'
+
 2016-03-06a : v0.8.11 'Combine Functions!'
 ------------------------------------------
 
