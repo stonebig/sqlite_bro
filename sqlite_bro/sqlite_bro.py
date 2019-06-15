@@ -468,12 +468,12 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
         if "label" in elem:  # and widget.instate(['pressed']):
             index = widget.index("@%d,%d" % (x, y))
             titre = widget.tab(index, 'text')
-        # determine selected table
-        actions = [widget, index]
-        title = 'Changing Tab label'
-        fields = ['', ['current label', (titre), 'r', 30], '',
-                  ['new label', titre, 'w', 30]]
-        create_dialog(title, fields, ("Ok", self.btn_chg_tab_ok), actions)
+            # determine selected table
+            actions = [widget, index]
+            title = 'Changing Tab label'
+            fields = ['', ['current label', (titre), 'r', 30], '',
+                ['new label', titre, 'w', 30]]
+            create_dialog(title, fields, ("Ok", self.btn_chg_tab_ok), actions)
 
     def btn_press(self, event):
             """button press over a widget with a 'close' element"""
