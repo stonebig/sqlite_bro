@@ -2,6 +2,11 @@ Changelog
 =========
 
 
+2019-06-16a : v0.9.1 'Support un-named Tabs!!'
+-------------------------------------------------
+
+* previously, un-named Tabs couldn't be renamed nor moved.
+
 2019-05-02a : v0.9.0 'De-duplicate column names!'
 -------------------------------------------------
 
