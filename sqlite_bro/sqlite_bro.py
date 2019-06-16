@@ -31,8 +31,8 @@ class App:
     """the GUI graphic application"""
     def __init__(self):
         """create a tkk graphic interface with a main window tk_win"""
-        self.__version__ = '0.9.0'
-        self._title = "2019-04-02a : 'De-duplicate column names!'"
+        self.__version__ = '0.9.1'
+        self._title = "2019-06-16a : 'Support un-named Tabs!'"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.tk_win = Tk()
@@ -465,40 +465,38 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
         """double-click on a tab definition to change label"""
         x, y, widget = event.x, event.y, event.widget
         elem = widget.identify(x, y)
-        if "label" in elem:  # and widget.instate(['pressed']):
-            index = widget.index("@%d,%d" % (x, y))
-            titre = widget.tab(index, 'text')
-            # determine selected table
-            actions = [widget, index]
-            title = 'Changing Tab label'
-            fields = ['', ['current label', (titre), 'r', 30], '',
-                ['new label', titre, 'w', 30]]
-            create_dialog(title, fields, ("Ok", self.btn_chg_tab_ok), actions)
+        index = widget.index("@%d,%d" % (x, y))
+        titre = widget.tab(index, 'text')
+        # determine selected table
+        actions = [widget, index]
+        title = 'Changing Tab label'
+        fields = ['', ['current label', (titre), 'r', 30], '',
+            ['new label', titre, 'w', 30]]
+        create_dialog(title, fields, ("Ok", self.btn_chg_tab_ok), actions)
 
     def btn_press(self, event):
-            """button press over a widget with a 'close' element"""
-            x, y, widget = event.x, event.y, event.widget
-            elem = widget.identify(x, y)  # widget is the notebook
-            if "close" in elem:  # close button function
-                index = widget.index("@%d,%d" % (x, y))
-                widget.state(['pressed'])
-                widget.pressed_index = index
-            elif "label" in elem:  # move function
-                index = widget.index("@%d,%d" % (x, y))
-                self.state_drag = True
-                self.state_drag_widgetid = widget.tabs()[index]
-                self.state_drag_index = index
+        """button press over a widget with a 'close' element"""
+        x, y, widget = event.x, event.y, event.widget
+        elem = widget.identify(x, y)  # widget is the notebook
+        if "close" in elem:  # close button function
+            index = widget.index("@%d,%d" % (x, y))
+            widget.state(['pressed'])
+            widget.pressed_index = index
+        else:  # move function
+            index = widget.index("@%d,%d" % (x, y))
+            self.state_drag = True
+            self.state_drag_widgetid = widget.tabs()[index]
+            self.state_drag_index = index
 
     def btn_Movex(self, event):
         """make the tab follows if button is pressed and mouse moves"""
         x, y, widget = event.x, event.y, event.widget
         elem = widget.identify(x, y)
-        if "label" in elem:  # and widget.instate(['pressed']):
-            index = widget.index("@%d,%d" % (x, y))
-            if self.state_drag:
-                if self.state_drag_index != index:
-                    self.btn_Move(widget, self.state_drag_index, index)
-                    self.state_drag_index = index
+        index = widget.index("@%d,%d" % (x, y))
+        if self.state_drag:
+            if self.state_drag_index != index:
+                self.btn_Move(widget, self.state_drag_index, index)
+                self.state_drag_index = index
 
     def btn_Move(self, notebook, old_index, new_index):
         """Move old_index tab to new_index position"""
