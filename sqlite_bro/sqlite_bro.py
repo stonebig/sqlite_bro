@@ -12,6 +12,7 @@ import datetime
 import io
 import codecs
 import shlex  # Simple lexical analysis
+from os.path import expanduser
 
 try:  # We are Python 3.3+
     from tkinter import *
@@ -31,12 +32,13 @@ class App:
     """the GUI graphic application"""
     def __init__(self):
         """create a tkk graphic interface with a main window tk_win"""
-        self.__version__ = '0.9.1'
-        self._title = "2019-06-16a : 'Support un-named Tabs!'"
+        self.__version__ = '0.9.2'
+        self._title = "of 2021-04-20a : 'Give PyPy a chance!'"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.tk_win = Tk()
-        self.tk_win.title('A graphic SQLite Client in 1 Python file')
+        self.tk_win.title('A graphic SQLite Client in 1 Python file (' +
+                          self.__version__+')')
         self.tk_win.option_add('*tearOff', FALSE)   # hint of tk documentation
         self.tk_win.minsize(600, 200)               # minimal size
 
@@ -74,6 +76,9 @@ class App:
         # Bind keyboard shortcuts
         self.tk_win.bind('<F9>', self.run_tab)
 
+        # define default home directory
+        self.home = expanduser("~")
+        
     def create_menu(self):
         """create the menu of the application"""
         menubar = Menu(self.tk_win)
@@ -102,8 +107,13 @@ class App:
         self.menu_help.add_command(label='about',
              command=lambda: messagebox.showinfo(message="""
              \nSQLite_bro : a graphic SQLite Client in 1 Python file
-             \n("""+self.__version__+") " + self._title+"""
-             \n(https://github.com/stonebig/sqlite_bro)"""))
+             \nVersion """+self.__version__+" " + self._title+
+             "\n(https://github.com/stonebig/sqlite_bro)"+
+             "\n\nrun by: "+sys.executable+
+             "\n\nhome: "+self.home+
+             "\n\ncurrent directory: "+os.getcwd()
+             
+             ))
 
     def create_toolbar(self):
         """create the toolbar of the application"""
@@ -690,6 +700,8 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                 try:
                     if shell_list[0] == '.import' and len(shell_list) >= 2:
                         csv_file = shell_list[1]
+                        if (csv_file+"z")[0] == "~":
+                            csv_file = os.path.join(self.home , csv_file[1:])
                         guess = guess_csv(csv_file)
                         if len(shell_list) >= 3:
                             guess.table_name = shell_list[2]
@@ -722,21 +734,25 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                         log.write("Error ! %s : %s" % (msg, instru))
                     sql_error = True
                     break
-            elif instruction != "":
+            elif len("".join(instruction.split())) >1: # PyPy answer 42 to blanks sql
                 try:
                     if shell_list[0] == '.once':
                         shell_list[0] = ' '
                         encode_in = 'utf-8-sig' if os.name == 'nt' else 'utf-8'
-                        self.conn.export_writer(instruction, shell_list[1],
+                        csv_file=shell_list[1]
+                        if (csv_file+"z")[0] == "~":
+                            csv_file = os.path.join(self.home , csv_file[1:])
+                        self.conn.export_writer(instruction, csv_file,
                                                 encoding=encode_in)
                         self.n.add_treeview(tab_tk_id, ('qry', 'file'),
-                                            ((instruction, shell_list[1]),),
-                                            "Info", ".once %s" % shell_list[1])
+                                            ((instruction, csv_file),),
+                                            "Info", ".once %s" % csv_file)
                     else:
                         cur = cu.execute(instruction)
                         rows = cur.fetchall()
                         # a query may have no result( like for an "update")
-                        if cur.description is not None:
+                        if cur.description is not None and \
+                            len(cur.description)>0: #pypy needs the second test
                             titles = [row_info[0] for
                                       row_info in cur.description]
                             self.n.add_treeview(
@@ -1526,19 +1542,23 @@ class Baresql():
         """export a csv table (action)"""
         cursor = self.conn.cursor()
         cursor.execute(sql)
+        # with PyPy, the "with io.open" for is more than necessary
         if sys.version_info[0] != 2:  # python3
-            fout = io.open(csv_file, 'w', newline='', encoding=encoding)
-            writer = csv.writer(fout, delimiter=delimiter,
+            with io.open(csv_file, 'w', newline='', encoding=encoding) as fout:
+                writer = csv.writer(fout, delimiter=delimiter,
                                 quotechar='"', quoting=csv.QUOTE_MINIMAL)
+                if header:
+                    writer.writerow([i  if isinstance(i, str) else i[0] 
+                    for i in cursor.description])  # PyPy as a strange list of list
+                writer.writerows(cursor.fetchall())   
         else:  # python2.7 (minimal)
-            fout = io.open(csv_file, 'wb')
-            writer = csv.writer(fout, delimiter=str(delimiter),
+            with io.open(csv_file, 'wb') as fout:
+                writer = csv.writer(fout, delimiter=str(delimiter),
                                 quotechar=str('"'), quoting=csv.QUOTE_MINIMAL)
-        if header:
-            writer.writerow([i[0] for i in cursor.description])  # heading row
-        writer.writerows(cursor.fetchall())
-        fout.close
-
+                if header:
+                    writer.writerow([i  if isinstance(i, str) else i[0] 
+                    for i in cursor.description])  # heading row with anti-PyPy bug
+                writer.writerows(cursor.fetchall())
 
 def _main():
     app = App()
@@ -1598,9 +1618,9 @@ RELEASE SAVEPOINT remember_Neo; -- free memory
 -- .once FILENAME         Output for the next SQL command only to FILENAME
 -- .import FILE TABLE     Import data from FILE into TABLE
 -- (create table only if it doesn't exist, keep existing records)
-.once 'this_file_of_result.txt'
+.once '~this_file_of_result.txt'
 select ItemNo, Description from item order by ItemNo desc;
-.import 'this_file_of_result.txt' in_this_table
+.import '~this_file_of_result.txt' in_this_table
 
 """
     app.n.new_query_tab("Welcome", welcome_text)

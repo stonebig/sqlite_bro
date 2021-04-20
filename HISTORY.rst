@@ -2,8 +2,18 @@ Changelog
 =========
 
 
+2021-04-20a : v0.9.2 'Give PyPy a chance!'
+------------------------------------------
+
+* compatiblity with PyPy
+
+* handle '~' convention for Home directory
+
+* indicate Python Executable and Home directory in Information bubble
+
+
 2019-06-16a : v0.9.1 'Support un-named Tabs!!'
--------------------------------------------------
+----------------------------------------------
 
 * previously, un-named Tabs couldn't be renamed nor moved.
 
