@@ -18,7 +18,7 @@ Features
 
 * Support of sql-embedded Python functions
 
-* Easy to distribute : 1 Python source file, 2.7/3.4+ compatible
+* Easy to distribute : 1 Python source file, Python and PyPy3 compatible
 
 * Easy to start : just launch sqlite_bro
 

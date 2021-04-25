@@ -32,8 +32,8 @@ class App:
     """the GUI graphic application"""
     def __init__(self):
         """create a tkk graphic interface with a main window tk_win"""
-        self.__version__ = '0.9.2'
-        self._title = "of 2021-04-20a : 'Give PyPy a chance!'"
+        self.__version__ = '0.9.3'
+        self._title = "of 2021-04-25a : 'Hello, World!'"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.tk_win = Tk()
@@ -1388,14 +1388,15 @@ class Baresql():
 
     def createpydef(self, sql):
         """generates and register a pydef instruction"""
+        import re
         instruction = sql.strip('; \t\n\r')
         # create Python function in Python
         exec(instruction[2:], globals(), locals())
         # add Python function in SQLite
-        firstline = (instruction[5:].splitlines()[0]).lstrip()
-        firstline = firstline.replace(" ", "") + "("
-        instr_name = firstline.split("(", 1)[0].strip()
-        instr_parms = firstline.count(',')+1
+        instr_header=re.findall('\w+', 
+                                instruction[:(instruction+')').find(')')])
+        instr_name = instr_header[1]
+        instr_parms = len(instr_header)-2
         instr_add = (("self.conn.create_function('%s', %s, %s)" % (
                       instr_name, instr_parms, instr_name)))
         exec(instr_add, globals(), locals())
@@ -1580,6 +1581,9 @@ INSERT INTO item values("T","Ford",1000);
 INSERT INTO item select "A","Merced",1250 union all select "W","Wheel",9 ;
 INSERT INTO part select ItemNo,"W","needed",Kg/250 from item where Kg>250;
 \n-- to CREATE a Python embedded function (enclose them by "py" and ";") :
+pydef py_hello():
+    "hello world"
+    return ("Hello, World !");
 pydef py_sin(s):
     "sinus function : example loading module, handling input/output as strings"
     import math as py_math
@@ -1588,12 +1592,13 @@ pydef py_fib(n):
    "fibonacci : example with function call (may only be internal) "
    fib = lambda n: n if n < 2 else fib(n-1) + fib(n-2)
    return("%s" % fib(n*1));
-pydef py_power(x,y):
+pydef py_power(x,
+               y):
     "power function : example loading module, handling input/output as strings"
     import math as py_math
     return ("%s" %  ((x*1) ** (y*1)) );
 \n-- to USE a python embedded function and nesting of embedded functions:
-select py_sin(1) as sinus, py_power(2, 1*py_fib(6)) as power, sqlite_version();
+select py_hello(), py_sin(1) as sinus, py_power(2, 1*py_fib(6)) as power, sqlite_version();
 \n-- to EXPORT :
 --    a TABLE, select TABLE, then click on icon 'SQL->CSV'
 --    a QUERY RESULT, select the SCRIPT text, then click on icon '???->CSV',

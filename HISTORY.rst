@@ -2,6 +2,11 @@ Changelog
 =========
 
 
+2021-04-25a : v0.9.3 'Hello, World!'
+------------------------------------
+
+* support functions with no parameters or parameters on several lines
+
 2021-04-20a : v0.9.2 'Give PyPy a chance!'
 ------------------------------------------
 
