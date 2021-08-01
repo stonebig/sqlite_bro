@@ -78,6 +78,9 @@ class App:
 
         # define default home directory
         self.home = expanduser("~")
+
+        # defaults for export
+        self.default_header = True
         
     def create_menu(self):
         """create the menu of the application"""
@@ -698,6 +701,11 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                 # import FILE TABLE
                 shell_list = shlex.split(instru)  # magic standard library
                 try:
+                    if shell_list[0] == '.headers' and len(shell_list) >= 2:
+                        if shell_list[1].lower() == 'off':
+                            self.default_header = False
+                        elif shell_list[1].lower() == 'on':
+                            self.default_header = True                        
                     if shell_list[0] == '.import' and len(shell_list) >= 2:
                         csv_file = shell_list[1]
                         if (csv_file+"z")[0] == "~":
@@ -748,6 +756,7 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                         if (csv_file+"z")[0] == "~":
                             csv_file = os.path.join(self.home , csv_file[1:])
                         self.conn.export_writer(instruction, csv_file,
+                                                header=self.default_header,
                                                 encoding=encode_in)
                         self.n.add_treeview(tab_tk_id, ('qry', 'file'),
                                             ((instruction, csv_file),),
@@ -1479,7 +1488,7 @@ class Baresql():
             yield sql[start:i], token
             if token == 'TK_SEMI':  # a new sql order can be a new shell token
                 can_be_shell_command = True
-            elif token not in ('TK_COM', 'TK_SP'):  # can't be a shell token
+            elif token not in ('TK_COM', 'TK_SP','TK_SHELL'):  # can't be a shell token
                 can_be_shell_command = False
             start = i
 
@@ -1625,9 +1634,11 @@ ROLLBACK TO SAVEPOINT remember_Neo; -- go back to savepoint state
 SELECT ItemNo, Description FROM Item;  -- see all is back to normal
 RELEASE SAVEPOINT remember_Neo; -- free memory
 \n\n-- '.' commands understood:
+-- .headers on|off        Include column headers in next .once exports (default on)																		   
 -- .once [--bom] FILENAME Output of next SQL command to FILENAME [with utf-8 bom]
 -- .import FILE TABLE     Import data from FILE into TABLE
 -- (create table only if it doesn't exist, keep existing records)
+.headers on
 .once --bom '~this_file_of_result.txt'
 select ItemNo, Description from item order by ItemNo desc;
 .import '~this_file_of_result.txt' in_this_table
