@@ -173,9 +173,10 @@ class App:
             self.conn = Baresql(self.database_file)
             self.actualize_db()
 
-    def open_db(self, isolation_level=None):
+    def open_db(self, filename='', isolation_level=None):
         """open an existing database"""
-        filename = filedialog.askopenfilename(
+        if filename == '':
+            filename = filedialog.askopenfilename(
             initialdir=self.initialdir, defaultextension='.db',
             filetypes=[("default", "*.db"), ("other", "*.db*"),
                        ("all", "*.*")])
@@ -1644,8 +1645,7 @@ ROLLBACK TO SAVEPOINT remember_Neo; -- go back to savepoint state
 SELECT ItemNo, Description FROM Item;  -- see all is back to normal
 RELEASE SAVEPOINT remember_Neo; -- free memory
 \n\n-- '.' commands understood:
--- .attach DATABASE       Attach the given Database DATABASE 
-															 
+-- .attach DATABASE       Attach the given Database DATABASE
 -- .headers on|off        Include column headers in next .once exports (default on)
 -- .separator COL         Set column separator in next .once exports (default ,)
 -- .once [--bom] FILE     Output of next SQL command to FILE [with utf-8 bom]
