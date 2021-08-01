@@ -18,6 +18,8 @@ Features
 
 * Support of sql-embedded Python functions
 
+* support supports command-line scripting (see sqlite_bro -h), with or without Graphic User Interface
+
 * Easy to distribute : 1 Python source file, Python and PyPy3 compatible
 
 * Easy to start : just launch sqlite_bro
@@ -45,6 +47,10 @@ Example usage
 ::
 
   $ sqlite_bro
+
+::
+
+  $ sqlite_bro -h
  
 Screenshot
 ----------

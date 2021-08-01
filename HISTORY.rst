@@ -11,6 +11,8 @@ Changelog
 
 * supports '.cd DIRECTORY' function
 
+* supports command-line scripting (see sqlite_bro -h)
+
 
 2021-04-25a : v0.9.3 'Hello, World!'
 ------------------------------------
