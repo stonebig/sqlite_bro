@@ -1642,13 +1642,15 @@ RELEASE SAVEPOINT remember_Neo; -- free memory
 -- .separator COL         Set column separator in next .once exports (default ,)
 -- .once [--bom] FILE     Output of next SQL command to FILE [with utf-8 bom]
 -- .import FILE TABLE     Import data from FILE into TABLE
--- (create table only if it doesn't exist, keep existing records)
+--                        (create TABLE only if it doesn't exist, keep existing records)
 .headers on
 .separator ;
 .once --bom '~this_file_of_result.txt'
 select ItemNo, Description from item order by ItemNo desc;
 .import '~this_file_of_result.txt' in_this_table
-
+.attach '~test.db'
+DROP TABLE IF EXISTS test.new_item;
+CREATE TABLE test.new_item as select * from "main"."item"
 """
     app.n.new_query_tab("Welcome", welcome_text)
     app.tk_win.mainloop()
