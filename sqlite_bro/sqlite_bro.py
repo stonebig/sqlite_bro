@@ -245,9 +245,10 @@ class App:
                     f.write("/*utf-8 tag : 你好 мир Artisou à croute*/\n")
                 f.write(script)
 
-    def attach_db(self):
+    def attach_db(self, filename=''):
         """attach an existing database"""
-        filename = filedialog.askopenfilename(
+        if filename == '':
+            filename = filedialog.askopenfilename(
             initialdir=self.initialdir, defaultextension='.db',
             title="Choose a database to attach ",
             filetypes=[("default", "*.db"), ("other", "*.db*"),
@@ -702,6 +703,11 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                 # import FILE TABLE
                 shell_list = shlex.split(instru)  # magic standard library
                 try:
+                    if shell_list[0] == '.attach' and len(shell_list) >= 2:
+                        db_file = shell_list[1]
+                        if (db_file+"z")[0] == "~":
+                            db_file = os.path.join(self.home , db_file[1:])
+                        self.attach_db(db_file)
                     if shell_list[0] == '.headers' and len(shell_list) >= 2:
                         if shell_list[1].lower() == 'off':
                             self.default_header = False
