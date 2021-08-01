@@ -52,10 +52,13 @@ Example usage
 
   $ sqlite_bro -h
  
-Screenshot
-----------
+Screenshots
+-----------
 
 .. image:: https://raw.githubusercontent.com/stonebig/sqlite_bro/master/docs/sqlite_bro.GIF
+
+.. image:: https://raw.githubusercontent.com/stonebig/sqlite_bro/master/docs/sqlite_bro_command_line.GIF
+
 
 Links
 -----
