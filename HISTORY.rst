@@ -2,6 +2,16 @@ Changelog
 =========
 
 
+2021-08-01a : v0.10.0 'Hello, better .scripting World!'
+------------------------------------------------------
+
+* supports '.headers on|off' function
+
+* supports '.separator COL' function 
+
+* supports '.cd DIRECTORY' function
+
+
 2021-04-25a : v0.9.3 'Hello, World!'
 ------------------------------------
 

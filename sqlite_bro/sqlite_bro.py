@@ -32,8 +32,8 @@ class App:
     """the GUI graphic application"""
     def __init__(self):
         """create a tkk graphic interface with a main window tk_win"""
-        self.__version__ = '0.9.3'
-        self._title = "of 2021-04-25a : 'Hello, World!'"
+        self.__version__ = '0.10.0'
+        self._title = "of 2021-08-01a : 'Hello, better .scripting World!'"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.tk_win = Tk()
@@ -82,7 +82,8 @@ class App:
         # defaults for export
         self.default_header = True
         self.default_separator = ","
-        
+        self.current_directory = os.getcwd()
+
     def create_menu(self):
         """create the menu of the application"""
         menubar = Menu(self.tk_win)
@@ -246,7 +247,7 @@ class App:
                     f.write("/*utf-8 tag : 你好 мир Artisou à croute*/\n")
                 f.write(script)
 
-    def attach_db(self, filename=''):
+    def attach_db(self, filename='', attach_as=''):
         """attach an existing database"""
         if filename == '':
             filename = filedialog.askopenfilename(
@@ -254,7 +255,10 @@ class App:
             title="Choose a database to attach ",
             filetypes=[("default", "*.db"), ("other", "*.db*"),
                        ("all", "*.*")])
-        attach = os.path.basename(filename).split(".")[0]
+        if attach_as == '':
+            attach = os.path.basename(filename).split(".")[0]
+        else:
+            attach = attach_as
         avoid = {i[1]: 0 for i in get_leaves(self.conn, 'attached_databases')}
         att, indice = attach, 0
         while attach in avoid:
@@ -704,11 +708,18 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                 # import FILE TABLE
                 shell_list = shlex.split(instru)  # magic standard library
                 try:
-                    if shell_list[0] == '.attach' and len(shell_list) >= 2:
+                    if shell_list[0] == '.cd' and len(shell_list) >= 2:
                         db_file = shell_list[1]
                         if (db_file+"z")[0] == "~":
-                            db_file = os.path.join(self.home , db_file[1:])
-                        self.attach_db(db_file)
+                            self.current_directory = os.path.join(self.home , db_file[1:])
+                        elif (db_file+"z")[:2] == "..":
+                            self.current_directory = os.path.join(self.current_directory, db_file)
+                        elif (db_file+"z")[:1] == ".":
+                            self.current_directory = os.path.join(self.current_directory, db_file[1:])
+                        else:
+                            self.current_directory = db_file
+                    os.chdir(self.current_directory)
+                    self.current_directory = os.getcwd()
                     if shell_list[0] == '.headers' and len(shell_list) >= 2:
                         if shell_list[1].lower() == 'off':
                             self.default_header = False
@@ -1645,7 +1656,7 @@ ROLLBACK TO SAVEPOINT remember_Neo; -- go back to savepoint state
 SELECT ItemNo, Description FROM Item;  -- see all is back to normal
 RELEASE SAVEPOINT remember_Neo; -- free memory
 \n\n-- '.' commands understood:
--- .attach DATABASE       Attach the given Database DATABASE
+-- .cd DIRECTORY          Change the working directory to DIRECTORY
 -- .headers on|off        Include column headers in next .once exports (default on)
 -- .separator COL         Set column separator in next .once exports (default ,)
 -- .once [--bom] FILE     Output of next SQL command to FILE [with utf-8 bom]
@@ -1656,9 +1667,10 @@ RELEASE SAVEPOINT remember_Neo; -- free memory
 .once --bom '~this_file_of_result.txt'
 select ItemNo, Description from item order by ItemNo desc;
 .import '~this_file_of_result.txt' in_this_table
-.attach '~test.db'
-DROP TABLE IF EXISTS test.new_item;
-CREATE TABLE test.new_item as select * from "main"."item"
+.cd ~
+ATTACH 'test.db' as toto;
+DROP TABLE IF EXISTS toto.new_item;
+CREATE TABLE toto.new_item as select * from "main"."item"
 """
     app.n.new_query_tab("Welcome", welcome_text)
     app.tk_win.mainloop()
