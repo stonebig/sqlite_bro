@@ -32,8 +32,8 @@ class App:
     """the GUI graphic application"""
     def __init__(self):
         """create a tkk graphic interface with a main window tk_win"""
-        self.__version__ = '0.10.1'
-        self._title = "of 2021-08-01b : 'Hello, scripting World!'"
+        self.__version__ = '0.10.2'
+        self._title = "of 2021-08-01b : 'Hello, better scripting World!'"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.tk_win = Tk()
@@ -1604,7 +1604,7 @@ def _main():
     parser.add_argument("-db", "--database", default=":memory:", type=str, help="specify initial Database if not ':memory:'") 
     parser.add_argument("-sc", "--scripts", type=str, help="qive a list of initial scripts") 
     args = parser.parse_args()
-    print(args)
+    #print(args)
     app = App()
     # start with a memory Database and a welcome
     app.new_db(":memory:")
