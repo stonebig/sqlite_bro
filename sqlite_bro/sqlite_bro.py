@@ -718,7 +718,7 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
             elif instru[:1] == ".":  # a shell command !
                 # handle a ".function" here !
                 # import FILE TABLE
-                shell_list = shlex.split(instru, posix=False)+[]+[]  # magic standard library
+                shell_list = shlex.split(instru, posix=False)  # magic standard library
                 try:
                     if shell_list[0] == '.cd' and len(shell_list) >= 2:
                         db_file = shell_list[1]
@@ -789,6 +789,14 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                         if log is not None:  # write to logFile
                             log.write('-- File %s imported in "%s"\n' % (
                                   csv_file, guess.table_name))
+                    if shell_list[0] == '.dump' and len(shell_list) >= 2:
+                        csv_file = shell_list[1]
+                        if (csv_file+"z")[0] == "~":
+                            csv_file = os.path.join(self.home , csv_file[1:])
+                        with io.open(csv_file, 'w', encoding='utf-8') as f:
+                            for line in self.conn.iterdump():
+                                f.write('%s\n' % line)
+                                
                 except IOError as err:
                     msg = ("I/O error: {0}".format(err))
                     self.n.add_treeview(tab_tk_id, ('Error !',), [(msg,)],
@@ -1681,13 +1689,17 @@ SELECT ItemNo, Description FROM Item; -- see things done
 ROLLBACK TO SAVEPOINT remember_Neo; -- go back to savepoint state
 SELECT ItemNo, Description FROM Item;  -- see all is back to normal
 RELEASE SAVEPOINT remember_Neo; -- free memory
+
 \n\n-- '.' commands understood:
 -- .cd DIRECTORY          Change the working directory to DIRECTORY
--- .headers on|off        Include column headers in next .once exports (default on)
--- .separator COL         Set column separator in next .once exports (default ,)
--- .once [--bom] FILE     Output of next SQL command to FILE [with utf-8 bom]
+-- .headers on|off        Turn display of headers on or off
 -- .import FILE TABLE     Import data from FILE into TABLE
 --                        (create TABLE only if it doesn't exist, keep existing records)
+-- .once [--bom] FILE     Output of next SQL command to FILE [with utf-8 bom]
+-- .output ?FILE?         Send output to FILE or stdout if FILE is omitted
+-- .print STRING...         Print literal STRING
+-- .separator COL         Set column separator in next .once exports (default ,)
+
 .headers on
 .separator ;
 .once --bom '~this_file_of_result.txt'
