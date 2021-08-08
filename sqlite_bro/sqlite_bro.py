@@ -1,7 +1,11 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 from __future__ import print_function, unicode_literals, division  # Python2.7
-import argparse
+
+try:
+    import argparse  # Python>=3.2
+except:
+    pass # Python<3.2
 
 import sqlite3 as sqlite
 import sys
@@ -1598,33 +1602,33 @@ class Baresql():
                 writer.writerows(cursor.fetchall())
 
 def _main():
-    parser = argparse.ArgumentParser(description='sqlite_bro : a graphic SQLite browser in 1 Python file')
-    parser.add_argument("-q", "--quiet", action='store_true', help="do not launch the gui") 
-    parser.add_argument("-w", "--wait", action='store_true', help="wait the user to launch the scripts") 
-    parser.add_argument("-db", "--database", default=":memory:", type=str, help="specify initial Database if not ':memory:'") 
-    parser.add_argument("-sc", "--scripts", type=str, help="qive a list of initial scripts") 
-    args = parser.parse_args()
-    #print(args)
-    app = App()
-    # start with a memory Database and a welcome
-    app.new_db(":memory:")
-    
-    if args.database:
-        app.open_db(args.database)
-    if args.scripts:
-        if isinstance(args.scripts, str):
-            scripts = [args.scripts, '', '']
-        else:
-            scripts = args.scripts
-        for script in scripts:
-            if os.path.isfile(script):
-                with io.open(script, encoding=guess_encoding(script)[0]) as f:
-                    welcome_text = f.read()
-                    app.n.new_query_tab("Welcome", welcome_text)
-                    if args.wait == False:
-                        app.run_tab()
-    else:    
-        welcome_text = """-- SQLite Memo (Demo = click on green "->" and "@" icons)
+																										  
+																							
+																										 
+																															  
+																							 
+							  
+				
+			   
+												
+						  
+	
+					 
+								  
+					
+										 
+											
+			 
+								  
+							  
+									  
+																			  
+										   
+																
+										  
+									 
+			 
+    welcome_text = """-- SQLite Memo (Demo = click on green "->" and "@" icons)
 \n-- to CREATE a table 'items' and a table 'parts' :
 DROP TABLE IF EXISTS item; DROP TABLE IF EXISTS part;
 CREATE TABLE item (ItemNo, Description,Kg  , PRIMARY KEY (ItemNo));
@@ -1695,11 +1699,39 @@ ATTACH 'test.db' as toto;
 DROP TABLE IF EXISTS toto.new_item;
 CREATE TABLE toto.new_item as select * from "main"."item"
 """
-        app.n.new_query_tab("Welcome", welcome_text)
-    if args.quiet == True:
-        app.close_db
+    #print(args)
+    app = App()
+    # start with a memory Database and a welcome
+    app.new_db(":memory:")
+    
+    if 'argparse' in globals():
+        parser = argparse.ArgumentParser(description='sqlite_bro : a graphic SQLite browser in 1 Python file')
+        parser.add_argument("-q", "--quiet", action='store_true', help="do not launch the gui") 
+        parser.add_argument("-w", "--wait", action='store_true', help="wait the user to launch the scripts") 
+        parser.add_argument("-db", "--database", default=":memory:", type=str, help="specify initial Database if not ':memory:'") 
+        parser.add_argument("-sc", "--scripts", type=str, help="qive a list of initial scripts") 
+        args = parser.parse_args()
+        if args.database:
+            app.open_db(args.database)
+        if args.scripts:
+            if isinstance(args.scripts, str):
+                scripts = [args.scripts, '', '']
+            else:
+                scripts = args.scripts
+            for script in scripts:
+                if os.path.isfile(script):
+                    with io.open(script, encoding=guess_encoding(script)[0]) as f:
+                        welcome_text = f.read()
+                        app.n.new_query_tab("Welcome", welcome_text)
+                        if args.wait == False:
+                            app.run_tab()
+        else:    
+            app.n.new_query_tab("Welcome", welcome_text)
+        if args.quiet == True:
+            app.close_db
     else:
-        app.tk_win.mainloop()
+        app.n.new_query_tab("Welcome", welcome_text)
+    app.tk_win.mainloop()
 
 if __name__ == '__main__':
     _main()    # create a tkk graphic interface with a main window tk_win

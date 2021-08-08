@@ -18,7 +18,7 @@ Features
 
 * Support of sql-embedded Python functions
 
-* support supports command-line scripting (see sqlite_bro -h), with or without Graphic User Interface
+* support supports command-line scripting if Python>=3.2 (see sqlite_bro -h), with or without Graphic User Interface
 
 * Easy to distribute : 1 Python source file, Python and PyPy3 compatible
 
@@ -39,7 +39,7 @@ You can install, upgrade, uninstall sqlite_bro.py with these commands::
   $ pip uninstall sqlite_bro
 
 or just launch latest version from IPython with %load https://raw.githubusercontent.com/stonebig/sqlite_bro/master/sqlite_bro/sqlite_bro.py
-or just copy the file 'sqlite_bro.py' to any pc (with python installed)
+or just copy the file 'sqlite_bro.py' to any pc and type 'python sqlite_bro.py'
 
 Example usage 
 -------------
