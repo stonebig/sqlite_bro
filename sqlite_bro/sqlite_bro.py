@@ -88,6 +88,14 @@ class App:
         self.default_separator = ","
         self.current_directory = os.getcwd()
 
+        # Initiate Output State
+        self.once_mode = False
+        self.encode_in = 'utf-8'
+        self.output_file = None
+        self.init_output = True
+        self.output_mode = False
+
+
     def create_menu(self):
         """create the menu of the application"""
         menubar = Menu(self.tk_win)
@@ -710,7 +718,7 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
             elif instru[:1] == ".":  # a shell command !
                 # handle a ".function" here !
                 # import FILE TABLE
-                shell_list = shlex.split(instru, posix=False)  # magic standard library
+                shell_list = shlex.split(instru, posix=False)+[]+[]  # magic standard library
                 try:
                     if shell_list[0] == '.cd' and len(shell_list) >= 2:
                         db_file = shell_list[1]
@@ -731,6 +739,28 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                             self.default_header = True                        
                     if shell_list[0] == '.separator' and len(shell_list) >= 2:
                         self.default_separator = shell_list[1]
+                    if shell_list[0] in( '.once', '.output'):
+                        if shell_list[0] == '.once':
+                            self.once_mode, self.init_output= True, True
+                        else:
+                            self.output_mode, self.init_output= True, True
+                        self.encode_in = 'utf-8'
+                        if '--bom' in shell_list:  # keep access to the option
+                            self.encode_in = 'utf-8-sig'
+                        if shell_list[1] =='--bom':
+                            self.output_file = shell_list[2]
+                        else:
+                            self.output_file = shell_list[1]
+                        if (self.output_file+"z")[0] == "~":
+                            self.output_file = os.path.join(self.home , self.output_file[1:])
+                        if self.output_file == None or self.output_file  =="":
+                            self.output_mode, self.init_output= False, False
+                    if shell_list[0] == '.print':
+                        if self.output_mode or self.once_mode:
+                            write_mode = 'w' if self.init_output else 'a'  # Write or Append
+                            with io.open(self.output_file, write_mode, encoding=self.encode_in) as fout:
+                                fout.writelines(instru[len('.print')+1:] +'\n')    
+                            self.init_output , self.once_mode = False, False
                     if shell_list[0] == '.import' and len(shell_list) >= 2:
                         csv_file = shell_list[1]
                         if (csv_file+"z")[0] == "~":
@@ -756,8 +786,8 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                         self.n.add_treeview(tab_tk_id, ('table', 'file'),
                                             ((guess.table_name, csv_file),),
                                             "Info", first_line)
-                    if log is not None:  # write to logFile
-                        log.write('-- File %s imported in "%s"\n' % (
+                        if log is not None:  # write to logFile
+                            log.write('-- File %s imported in "%s"\n' % (
                                   csv_file, guess.table_name))
                 except IOError as err:
                     msg = ("I/O error: {0}".format(err))
@@ -769,24 +799,16 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                     break
             elif len("".join(instruction.split())) >1: # PyPy answer 42 to blanks sql
                 try:
-                    if shell_list[0] == '.once':
-                        shell_list[0] = ' '
-                        encode_in = 'utf-8'
-                        if '--bom' in shell_list:  # keep access to the option
-                            encode_in = 'utf-8-sig'
-                        if shell_list[1] =='--bom':
-                            csv_file = shell_list[2]
-                        else:
-                            csv_file = shell_list[1]
-                        if (csv_file+"z")[0] == "~":
-                            csv_file = os.path.join(self.home , csv_file[1:])
-                        self.conn.export_writer(instruction, csv_file,
+                    if self.output_mode or self.once_mode:
+                        self.conn.export_writer(instruction, self.output_file,
                                                 header=self.default_header,
                                                 delimiter=self.default_separator,
-                                                encoding=encode_in)
+                                                encoding=self.encode_in,
+                                                initialize=self.init_output)
+                        self.once_mode, self.init_output = False, False
                         self.n.add_treeview(tab_tk_id, ('qry', 'file'),
-                                            ((instruction, csv_file),),
-                                            "Info", ".once %s" % csv_file)
+                                            ((instruction, self.output_file),),
+                                            "Info", ".once %s" % self.output_file)
                     else:
                         cur = cu.execute(instruction)
                         rows = cur.fetchall()
@@ -1579,13 +1601,15 @@ class Baresql():
         self.conn.commit()
 
     def export_writer(self, sql, csv_file, header=True,
-                      delimiter=',', encoding='utf-8', quotechar='"'):
+                      delimiter=',', encoding='utf-8', quotechar='"',
+                      initialize=True):
         """export a csv table (action)"""
         cursor = self.conn.cursor()
         cursor.execute(sql)
         # with PyPy, the "with io.open" for is more than necessary
         if sys.version_info[0] != 2:  # python3
-            with io.open(csv_file, 'w', newline='', encoding=encoding) as fout:
+            write_mode = 'w' if initialize else 'a'  # Write or Append 
+            with io.open(csv_file, write_mode, newline='', encoding=encoding) as fout:
                 writer = csv.writer(fout, delimiter=delimiter,
                                 quotechar='"', quoting=csv.QUOTE_MINIMAL)
                 if header:
@@ -1593,7 +1617,8 @@ class Baresql():
                     for i in cursor.description])  # PyPy as a strange list of list
                 writer.writerows(cursor.fetchall())   
         else:  # python2.7 (minimal)
-            with io.open(csv_file, 'wb') as fout:
+            write_mode = 'wb' if initialize else 'ab'  # Write or Append 
+            with io.open(csv_file, write_mode) as fout:
                 writer = csv.writer(fout, delimiter=str(delimiter),
                                 quotechar=str('"'), quoting=csv.QUOTE_MINIMAL)
                 if header:
@@ -1602,32 +1627,6 @@ class Baresql():
                 writer.writerows(cursor.fetchall())
 
 def _main():
-																										  
-																							
-																										 
-																															  
-																							 
-							  
-				
-			   
-												
-						  
-	
-					 
-								  
-					
-										 
-											
-			 
-								  
-							  
-									  
-																			  
-										   
-																
-										  
-									 
-			 
     welcome_text = """-- SQLite Memo (Demo = click on green "->" and "@" icons)
 \n-- to CREATE a table 'items' and a table 'parts' :
 DROP TABLE IF EXISTS item; DROP TABLE IF EXISTS part;
