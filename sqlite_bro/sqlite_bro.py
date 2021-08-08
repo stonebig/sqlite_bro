@@ -804,11 +804,20 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                     if shell_list[0] == '.read' and len(shell_list) >= 2:
                         filename = shell_list[1]
                         if (filename+"z")[0] == "~":
-                            filename = os.path.join(self.home , csv_file[1:])
+                            filename = os.path.join(self.home , filename[1:])
                         with io.open(filename, encoding=guess_encoding(filename)[0]) as f:
                             read_this = f.read()
                         self.n.new_query_tab(".Read", read_this)
                         self.run_tab()                                
+                    if shell_list[0] == '.open':
+                        self.close_db
+                        if len(shell_list) >= 2:
+                            filename = shell_list[1]
+                            if (filename+"z")[0] == "~":
+                                filename = os.path.join(self.home , filename[1:])
+                            self.open_db(filename)
+                        else:
+                            self.new_db(":memory:")
                 except IOError as err:
                     msg = ("I/O error: {0}".format(err))
                     self.n.add_treeview(tab_tk_id, ('Error !',), [(msg,)],
@@ -1709,6 +1718,7 @@ RELEASE SAVEPOINT remember_Neo; -- free memory
 -- .import FILE TABLE     Import data from FILE into TABLE
 --                        (create TABLE only if it doesn't exist, keep existing records)
 -- .once [--bom] FILE     Output of next SQL command to FILE [with utf-8 bom]
+-- .open ?FILE?           Close existing database and reopen FILE
 -- .output ?FILE?         Send output to FILE or stdout if FILE is omitted
 -- .print STRING...       Print literal STRING
 -- .read FILE             Read input from FILE
