@@ -2,8 +2,20 @@ Changelog
 =========
 
 
+2021-08-09a : v0.11.0 'Script me more!'
+---------------------------------------
+
+* supports '.output' and '.print' functions
+
+* supports '.dump' and '.read' functions 
+
+* supports '.open' function
+
+* supports '.backup' and '.restore' functions
+
+
 2021-08-01a : v0.10.0 'Hello, better .scripting World!'
-------------------------------------------------------
+-------------------------------------------------------
 
 * supports '.headers on|off' function
 
