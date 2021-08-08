@@ -809,6 +809,7 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                             read_this = f.read()
                         self.n.new_query_tab(".Read", read_this)
                         self.run_tab()                                
+                        self.actualize_db()                             
                     if shell_list[0] == '.open':
                         self.close_db
                         if len(shell_list) >= 2:
@@ -818,6 +819,25 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                             self.open_db(filename)
                         else:
                             self.new_db(":memory:")
+                        self.actualize_db()    
+                    if shell_list[0] == '.restore' and len(shell_list) >= 2:
+                        filename = shell_list[1]
+                        if (filename+"z")[0] == "~":
+                            filename = os.path.join(self.home , filename[1:])
+                        db_from = sqlite.connect(filename)
+                        with db_from:
+                           db_from.backup(self.conn.conn)
+                        db_from.close
+                        self.actualize_db()
+                    if shell_list[0] == '.backup' and len(shell_list) >= 2:
+                        filename = shell_list[1]
+                        if (filename+"z")[0] == "~":
+                            filename = os.path.join(self.home , filename[1:])
+                        db_to = sqlite.connect(filename)
+                        with db_to:
+                           self.conn.conn.backup(db_to)
+                        db_to.close()
+                        
                 except IOError as err:
                     msg = ("I/O error: {0}".format(err))
                     self.n.add_treeview(tab_tk_id, ('Error !',), [(msg,)],
@@ -1712,6 +1732,7 @@ SELECT ItemNo, Description FROM Item;  -- see all is back to normal
 RELEASE SAVEPOINT remember_Neo; -- free memory
 
 \n\n-- '.' commands understood:
+-- .backup FILE           Backup DB (default "main") to FILE
 -- .cd DIRECTORY          Change the working directory to DIRECTORY
 -- .dump ?FILE?           Render database content as SQL (to FILE if specified)
 -- .headers on|off        Turn display of headers on or off
@@ -1722,6 +1743,7 @@ RELEASE SAVEPOINT remember_Neo; -- free memory
 -- .output ?FILE?         Send output to FILE or stdout if FILE is omitted
 -- .print STRING...       Print literal STRING
 -- .read FILE             Read input from FILE
+-- .restore FILE          Restore content of DB (default "main") from FILE
 -- .separator COL         Set column separator in next .once exports (default ,)
 
 .headers on
