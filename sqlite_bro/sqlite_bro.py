@@ -706,7 +706,7 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
             elif instru[:1] == ".":  # a shell command !
                 # handle a ".function" here !
                 # import FILE TABLE
-                shell_list = shlex.split(instru)  # magic standard library
+                shell_list = shlex.split(instru, posix=False)  # magic standard library
                 try:
                     if shell_list[0] == '.cd' and len(shell_list) >= 2:
                         db_file = shell_list[1]
