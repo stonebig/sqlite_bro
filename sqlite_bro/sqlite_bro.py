@@ -801,6 +801,14 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                             self.n.add_treeview(tab_tk_id, ('output'),
                                  ([('%s' % line) for line in self.conn.iterdump()]),
                                  "Dump", ".dump")
+                    if shell_list[0] == '.read' and len(shell_list) >= 2:
+                        filename = shell_list[1]
+                        if (filename+"z")[0] == "~":
+                            filename = os.path.join(self.home , csv_file[1:])
+                        with io.open(filename, encoding=guess_encoding(filename)[0]) as f:
+                            read_this = f.read()
+                        self.n.new_query_tab(".Read", read_this)
+                        self.run_tab()                                
                 except IOError as err:
                     msg = ("I/O error: {0}".format(err))
                     self.n.add_treeview(tab_tk_id, ('Error !',), [(msg,)],
@@ -1703,6 +1711,7 @@ RELEASE SAVEPOINT remember_Neo; -- free memory
 -- .once [--bom] FILE     Output of next SQL command to FILE [with utf-8 bom]
 -- .output ?FILE?         Send output to FILE or stdout if FILE is omitted
 -- .print STRING...       Print literal STRING
+-- .read FILE             Read input from FILE
 -- .separator COL         Set column separator in next .once exports (default ,)
 
 .headers on
