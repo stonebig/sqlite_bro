@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-2021-08-09a : v0.11.0 'Script me more!'
+2021-08-09b : v0.11.1 'Script me more!'
 ---------------------------------------
 
 * supports '.output' and '.print' functions
@@ -12,6 +12,8 @@ Changelog
 * supports '.open' function
 
 * supports '.backup' and '.restore' functions
+
+* switch to github actions and pytest
 
 
 2021-08-01a : v0.10.0 'Hello, better .scripting World!'
