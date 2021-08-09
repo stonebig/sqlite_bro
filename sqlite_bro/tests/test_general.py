@@ -3,11 +3,12 @@ from nose.tools import assert_equal
 import pathlib
 import tempfile
 
+
 def test_DeBase():
     "learning the ropes"
-    assert_equal(1 , 1)
+    assert_equal(1, 1)
 
-	
+
 def test_Basics():
     "create script, run script, output result, check result"
     # import os

@@ -723,7 +723,7 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                     if shell_list[0] == '.cd' and len(shell_list) >= 2:
                         db_file = shell_list[1]
                         if (db_file+"z")[0] == "~":
-                            self.current_directory = os.path.join(self.home , db_file[1:])
+                            self.current_directory = os.path.join(self.home, db_file[1:])
                         elif (db_file+"z")[:2] == "..":
                             self.current_directory = os.path.join(self.current_directory, db_file)
                         elif (db_file+"z")[:1] == ".":
@@ -736,14 +736,14 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                         if shell_list[1].lower() == 'off':
                             self.default_header = False
                         elif shell_list[1].lower() == 'on':
-                            self.default_header = True                        
+                            self.default_header = True                      
                     if shell_list[0] == '.separator' and len(shell_list) >= 2:
                         self.default_separator = shell_list[1]
                     if shell_list[0] in( '.once', '.output'):
                         if shell_list[0] == '.once':
-                            self.once_mode, self.init_output= True, True
+                            self.once_mode, self.init_output = True, True
                         else:
-                            self.output_mode, self.init_output= True, True
+                            self.output_mode, self.init_output = True, True
                         self.encode_in = 'utf-8'
                         if '--bom' in shell_list:  # keep access to the option
                             self.encode_in = 'utf-8-sig'
@@ -752,19 +752,19 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                         else:
                             self.output_file = shell_list[1]
                         if (self.output_file+"z")[0] == "~":
-                            self.output_file = os.path.join(self.home , self.output_file[1:])
-                        if self.output_file == None or self.output_file  =="":
-                            self.output_mode, self.init_output= False, False
+                            self.output_file = os.path.join(self.home, self.output_file[1:])
+                        if self.output_file is None or self.output_file =="":
+                            self.output_mode, self.init_output = False, False
                     if shell_list[0] == '.print':
                         if self.output_mode or self.once_mode:
                             write_mode = 'w' if self.init_output else 'a'  # Write or Append
                             with io.open(self.output_file, write_mode, encoding=self.encode_in) as fout:
-                                fout.writelines(instru[len('.print')+1:] +'\n')    
-                            self.init_output , self.once_mode = False, False
+                                fout.writelines(instru[len('.print')+1:] +'\n')
+                            self.init_output, self.once_mode = False, False
                     if shell_list[0] == '.import' and len(shell_list) >= 2:
                         csv_file = shell_list[1]
                         if (csv_file+"z")[0] == "~":
-                            csv_file = os.path.join(self.home , csv_file[1:])
+                            csv_file = os.path.join(self.home, csv_file[1:])
                         guess = guess_csv(csv_file)
                         if len(shell_list) >= 3:
                             guess.table_name = shell_list[2]
@@ -793,7 +793,7 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                         if len(shell_list) >= 2:
                             csv_file = shell_list[1]
                             if (csv_file+"z")[0] == "~":
-                                csv_file = os.path.join(self.home , csv_file[1:])
+                                csv_file = os.path.join(self.home, csv_file[1:])
                             with io.open(csv_file, 'w', encoding='utf-8') as f:
                                 for line in self.conn.iterdump():
                                     f.write('%s\n' % line)
@@ -804,40 +804,40 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                     if shell_list[0] == '.read' and len(shell_list) >= 2:
                         filename = shell_list[1]
                         if (filename+"z")[0] == "~":
-                            filename = os.path.join(self.home , filename[1:])
+                            filename = os.path.join(self.home, filename[1:])
                         with io.open(filename, encoding=guess_encoding(filename)[0]) as f:
                             read_this = f.read()
                         self.n.new_query_tab(".Read", read_this)
-                        self.run_tab()                                
-                        self.actualize_db()                             
+                        self.run_tab()
+                        self.actualize_db()
                     if shell_list[0] == '.open':
                         self.close_db
                         if len(shell_list) >= 2:
                             filename = shell_list[1]
                             if (filename+"z")[0] == "~":
-                                filename = os.path.join(self.home , filename[1:])
+                                filename = os.path.join(self.home, filename[1:])
                             self.open_db(filename)
                         else:
                             self.new_db(":memory:")
-                        self.actualize_db()    
+                        self.actualize_db()
                     if shell_list[0] == '.restore' and len(shell_list) >= 2:
                         filename = shell_list[1]
                         if (filename+"z")[0] == "~":
-                            filename = os.path.join(self.home , filename[1:])
+                            filename = os.path.join(self.home, filename[1:])
                         db_from = sqlite.connect(filename)
                         with db_from:
-                           db_from.backup(self.conn.conn)
+                            db_from.backup(self.conn.conn)
                         db_from.close
                         self.actualize_db()
                     if shell_list[0] == '.backup' and len(shell_list) >= 2:
                         filename = shell_list[1]
                         if (filename+"z")[0] == "~":
-                            filename = os.path.join(self.home , filename[1:])
+                            filename = os.path.join(self.home, filename[1:])
                         db_to = sqlite.connect(filename)
                         with db_to:
-                           self.conn.conn.backup(db_to)
+                            self.conn.conn.backup(db_to)
                         db_to.close()
-                        
+
                 except IOError as err:
                     msg = ("I/O error: {0}".format(err))
                     self.n.add_treeview(tab_tk_id, ('Error !',), [(msg,)],
@@ -846,7 +846,7 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                         log.write("Error ! %s : %s" % (msg, instru))
                     sql_error = True
                     break
-            elif len("".join(instruction.split())) >1: # PyPy answer 42 to blanks sql
+            elif len("".join(instruction.split())) >1:  # PyPy answer 42 to blanks sql
                 try:
                     if self.output_mode or self.once_mode:
                         self.conn.export_writer(instruction, self.output_file,
@@ -863,7 +863,7 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                         rows = cur.fetchall()
                         # a query may have no result( like for an "update")
                         if cur.description is not None and \
-                            len(cur.description)>0: #pypy needs the second test
+                            len(cur.description)>0:  # pypy needs this test
                             titles = [row_info[0] for
                                       row_info in cur.description]
                             self.n.add_treeview(
@@ -1202,12 +1202,12 @@ def guess_sql_creation(table_name, separ, decim, header, data, quoter='"'):
             checker.close
     if header:
         # de-duplicate column names, if needed by pastixing with '_'+number
-        for i in  range(len(r)):
-            if r[i] in r[:i] :
-                j=1
-                while r[i]+'_'+str(j) in  r[:i] + r[i+1:]:
-                    j +=1
-                r[i]+= '_'+str(j)
+        for i in range(len(r)):
+            if r[i] in r[:i]:
+                j = 1
+                while r[i]+'_'+str(j) in r[:i] + r[i+1:]:
+                    j += 1
+                r[i] += '_'+str(j)
         head = ",\n".join([('"%s" %s' % (r[i], typ[i]))
                            for i in range(len(r))])
         sql_crea = ('CREATE TABLE "%s" (%s);' % (table_name, head))
@@ -1504,7 +1504,7 @@ class Baresql():
         # create Python function in Python
         exec(instruction[2:], globals(), locals())
         # add Python function in SQLite
-        instr_header=re.findall(r'\w+', 
+        instr_header = re.findall(r'\w+', 
                                 instruction[:(instruction+')').find(')')])
         instr_name = instr_header[1]
         instr_parms = len(instr_header)-2
@@ -1562,8 +1562,8 @@ class Baresql():
                 if token == 'TK_SP':
                     # find the end of the 'Spaces' Token just detected
                     while (i < length and sql[i] in dico and
-                            dico[sql[i]] == 'TK_SP'):
-                                i += 1
+                        dico[sql[i]] == 'TK_SP'):
+                        i += 1
                 elif token == 'TK_STRING':
                     # find the end of the 'String' Token just detected
                     delimiter = sql[i]
@@ -1585,7 +1585,7 @@ class Baresql():
             yield sql[start:i], token
             if token == 'TK_SEMI':  # a new sql order can be a new shell token
                 can_be_shell_command = True
-            elif token not in ('TK_COM', 'TK_SP','TK_SHELL'):  # can't be a shell token
+            elif token not in ('TK_COM', 'TK_SP', 'TK_SHELL'):  # can't be a shell token
                 can_be_shell_command = False
             start = i
 
@@ -1664,16 +1664,17 @@ class Baresql():
                 if header:
                     writer.writerow([i  if isinstance(i, str) else i[0] 
                     for i in cursor.description])  # PyPy as a strange list of list
-                writer.writerows(cursor.fetchall())   
+                writer.writerows(cursor.fetchall())
         else:  # python2.7 (minimal)
-            write_mode = 'wb' if initialize else 'ab'  # Write or Append 
+            write_mode = 'wb' if initialize else 'ab'  # Write or Append
             with io.open(csv_file, write_mode) as fout:
                 writer = csv.writer(fout, delimiter=str(delimiter),
                                 quotechar=str('"'), quoting=csv.QUOTE_MINIMAL)
                 if header:
-                    writer.writerow([i  if isinstance(i, str) else i[0] 
-                    for i in cursor.description])  # heading row with anti-PyPy bug
+                    writer.writerow([i if isinstance(i, str) else i[0]
+                        for i in cursor.description])  # heading row with anti-PyPy bug
                 writer.writerows(cursor.fetchall())
+
 
 def _main():
     welcome_text = """-- SQLite Memo (Demo = click on green "->" and "@" icons)
@@ -1757,17 +1758,17 @@ DROP TABLE IF EXISTS toto.new_item;
 CREATE TABLE toto.new_item as select * from "main"."item";
 .dump
 """
-    #print(args)
+    # print(args)
     app = App()
     # start with a memory Database and a welcome
     app.new_db(":memory:")
-    
+
     if 'argparse' in globals():
         parser = argparse.ArgumentParser(description='sqlite_bro : a graphic SQLite browser in 1 Python file')
-        parser.add_argument("-q", "--quiet", action='store_true', help="do not launch the gui") 
-        parser.add_argument("-w", "--wait", action='store_true', help="wait the user to launch the scripts") 
-        parser.add_argument("-db", "--database", default=":memory:", type=str, help="specify initial Database if not ':memory:'") 
-        parser.add_argument("-sc", "--scripts", type=str, help="qive a list of initial scripts") 
+        parser.add_argument("-q", "--quiet", action='store_true', help="do not launch the gui")
+        parser.add_argument("-w", "--wait", action='store_true', help="wait the user to launch the scripts")
+        parser.add_argument("-db", "--database", default=":memory:", type=str, help="specify initial Database if not ':memory:'")
+        parser.add_argument("-sc", "--scripts", type=str, help="qive a list of initial scripts")
         args = parser.parse_args()
         if args.database:
             app.open_db(args.database)
@@ -1781,15 +1782,16 @@ CREATE TABLE toto.new_item as select * from "main"."item";
                     with io.open(script, encoding=guess_encoding(script)[0]) as f:
                         welcome_text = f.read()
                         app.n.new_query_tab("Welcome", welcome_text)
-                        if args.wait == False:
+                        if not args.wait:
                             app.run_tab()
-        else:    
+        else:
             app.n.new_query_tab("Welcome", welcome_text)
-        if args.quiet == True:
+        if args.quiet:
             app.close_db
     else:
         app.n.new_query_tab("Welcome", welcome_text)
     app.tk_win.mainloop()
+
 
 if __name__ == '__main__':
     _main()    # create a tkk graphic interface with a main window tk_win
