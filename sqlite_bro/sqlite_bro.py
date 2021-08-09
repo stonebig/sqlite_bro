@@ -1504,7 +1504,7 @@ class Baresql():
         # create Python function in Python
         exec(instruction[2:], globals(), locals())
         # add Python function in SQLite
-        instr_header=re.findall('\w+', 
+        instr_header=re.findall(r'\w+', 
                                 instruction[:(instruction+')').find(')')])
         instr_name = instr_header[1]
         instr_parms = len(instr_header)-2
