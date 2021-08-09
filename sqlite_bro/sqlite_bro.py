@@ -95,7 +95,6 @@ class App:
         self.init_output = True
         self.output_mode = False
 
-
     def create_menu(self):
         """create the menu of the application"""
         menubar = Menu(self.tk_win)
@@ -129,7 +128,6 @@ class App:
              "\n\nrun by: "+sys.executable+
              "\n\nhome: "+self.home+
              "\n\ncurrent directory: "+os.getcwd()
-             
              ))
 
     def create_toolbar(self):
