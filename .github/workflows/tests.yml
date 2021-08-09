@@ -34,7 +34,25 @@ jobs:
         # stop the build if there are Python syntax errors or undefined names
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Test with pytest
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistic
+        
+      # start virtual display driver 
+      # (from https://github.com/miketrethewey/tkinter-test/blob/master/.github/workflows/ci.yml)
+    
+    - name: Start virtual display driver & Test (!windows)
+      env:
+        DISPLAY: :99
       run: |
+        disp=:99
+        screen=0
+        geom=640x480x24
+        exec Xvfb $disp -screen $screen $geom 2>/tmp/Xvfb.log &
+        export DISPLAY=:99
         pytest -v
+      if: contains(matrix.os-name, 'windows') != true
+    - name: Start virtual display driver & Test (windows)
+      uses: GabrielBB/xvfb-action@v1
+      with:
+        run: pytest -v
+      if: contains(matrix.os-name, 'windows')
+   
