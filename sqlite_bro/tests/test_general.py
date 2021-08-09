@@ -1,12 +1,12 @@
 # from pyappveyordemo.extension import some_function
-from nose.tools import assert_equal
+import pytest
 import pathlib
 import tempfile
 
 
 def test_DeBase():
     "learning the ropes"
-    assert_equal(1, 1)
+    assert 1 == 1
 
 
 def test_Basics():
@@ -35,6 +35,6 @@ select ItemNo, Description, 1000*Kg Gramm  from item order by ItemNo desc;
         file_encoding = sqlite_bro.guess_encoding(tmp_file)[0]
         with io.open(tmp_file, mode='rt', encoding=file_encoding) as f:
             result = f.readlines()
-        assert_equal(len(result), 4)
-        assert_equal(result[-1], "A,Merced,1250000\n")
+        assert len(result) == 4
+        assert result[-1] == "A,Merced,1250000\n"
         # os.remove(tmp_file)

@@ -32,6 +32,7 @@ except ImportError:  # or we are still Python2.7
 
 tipwindow = None
 
+
 class App:
     """the GUI graphic application"""
 
@@ -877,7 +878,7 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                             with io.open(
                                 self.output_file, write_mode, encoding=self.encode_in
                             ) as fout:
-                                fout.writelines(instru[len(".print") + 1 :] + "\n")
+                                fout.writelines(instru[len(".print") + 1:] + "\n")
                             self.init_output, self.once_mode = False, False
                     if shell_list[0] == ".import" and len(shell_list) >= 2:
                         csv_file = shell_list[1]
