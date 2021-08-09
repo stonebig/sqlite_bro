@@ -1,19 +1,21 @@
 # -*- coding: utf-8 -*-
 from __future__ import with_statement
 import os
-from setuptools import find_packages, setup, Extension
+from setuptools import setup
 
 
 def get_version():
-    with open(os.path.join('sqlite_bro','sqlite_bro.py')) as f:
+    with open(os.path.join('sqlite_bro', 'sqlite_bro.py')) as f:
         for line in f:
             if line.strip().startswith('self.__version__'):
                 return eval(line.split('=')[-1])
+
 
 def read(*paths):
     """Build a file path from *paths* and return the contents."""
     with open(os.path.join(*paths), 'r') as f:
         return f.read()
+
 
 setup(
     name='sqlite_bro',
@@ -26,7 +28,7 @@ setup(
     author_email='write_pull_requests_to_stonebig@github.com',
     url='https://github.com/stonebig/sqlite_bro',
     license='MIT license',
-    #py_modules=['sqlite_bro'],
+    # py_modules=['sqlite_bro'],
     packages=['sqlite_bro', 'sqlite_bro.tests'],
     # package_dir={"sqlite_bro": "sqlite_bro"},
     # namespace_packages=[],
