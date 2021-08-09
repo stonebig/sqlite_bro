@@ -4,7 +4,7 @@ from __future__ import print_function, unicode_literals, division  # Python2.7
 
 try:
     import argparse  # Python>=3.2
-except:
+except ImportError:
     pass  # Python<3.2
 
 import sqlite3 as sqlite
@@ -14,7 +14,6 @@ import locale
 import csv
 import datetime
 import io
-import codecs
 import shlex  # Simple lexical analysis
 from os.path import expanduser
 
@@ -22,7 +21,7 @@ try:  # We are Python 3.3+
     from tkinter import *
     from tkinter import font, ttk, filedialog, messagebox
     from tkinter.ttk import *
-except:  # or we are still Python2.7
+except ImportError:  # or we are still Python2.7
     from Tkinter import *
     import Tkinter as tkinter
     import tkFont as font
@@ -31,6 +30,7 @@ except:  # or we are still Python2.7
     from ttk import *
     import ttk as ttk
 
+tipwindow = None
 
 class App:
     """the GUI graphic application"""
@@ -679,10 +679,6 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
         def enter(event):
             global tipwindow
             x = y = 0
-            try:
-                tipwindow = tipwindow
-            except:
-                tipwindow = None
             if tipwindow or not text:
                 return
             x, y, cx, cy = widget.bbox("insert")
