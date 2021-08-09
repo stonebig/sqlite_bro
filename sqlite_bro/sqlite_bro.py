@@ -1368,7 +1368,7 @@ def import_csvtb_ok(thetop, entries, actions):
         actualize_db()
 
 
-def read_this_csv(csv_file, encoding, delimiter , quotechar, header, decim):
+def read_this_csv(csv_file, encoding, delimiter, quotechar, header, decim):
     """yield csv data records from a file """
     # handle Python 2/3
     try:
@@ -1502,7 +1502,7 @@ class Baresql():
         # create Python function in Python
         exec(instruction[2:], globals(), locals())
         # add Python function in SQLite
-        instr_header = re.findall(r'\w+', 
+        instr_header = re.findall(r'\w+',
                                 instruction[:(instruction+')').find(')')])
         instr_name = instr_header[1]
         instr_parms = len(instr_header)-2
@@ -1601,7 +1601,7 @@ class Baresql():
                 if tok == "TRIGGER":
                     trigger_mode = True
                     translvl = 0
-                elif trigger_mode and tok in('BEGIN', 'CASE'):
+                elif trigger_mode and tok in ('BEGIN', 'CASE'):
                     translvl += 1
                 elif trigger_mode and tok == 'END':
                     translvl -= 1
@@ -1655,12 +1655,12 @@ class Baresql():
         cursor.execute(sql)
         # with PyPy, the "with io.open" for is more than necessary
         if sys.version_info[0] != 2:  # python3
-            write_mode = 'w' if initialize else 'a'  # Write or Append 
+            write_mode = 'w' if initialize else 'a'  # Write or Append
             with io.open(csv_file, write_mode, newline='', encoding=encoding) as fout:
                 writer = csv.writer(fout, delimiter=delimiter,
                                 quotechar='"', quoting=csv.QUOTE_MINIMAL)
                 if header:
-                    writer.writerow([i  if isinstance(i, str) else i[0] 
+                    writer.writerow([i if isinstance(i, str) else i[0]
                     for i in cursor.description])  # PyPy as a strange list of list
                 writer.writerows(cursor.fetchall())
         else:  # python2.7 (minimal)
