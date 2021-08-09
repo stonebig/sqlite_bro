@@ -5,6 +5,8 @@ dist
 MANIFEST
 .coverage
 .tox/
+.hypothesis/
 .cache/
 *.egg-info/
 *.tmp
+*.tmp'
