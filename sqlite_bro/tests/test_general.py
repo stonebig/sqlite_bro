@@ -1,15 +1,16 @@
 # from pyappveyordemo.extension import some_function
 from nose.tools import assert_equal
 import pathlib
-import tempfile, shutil
+import tempfile
 
 def test_DeBase():
     "learning the ropes"
     assert_equal(1 , 1)
+
 	
 def test_Basics():
     "create script, run script, output result, check result"
-    import os
+    # import os
     import io
     from sqlite_bro import sqlite_bro
     app = sqlite_bro.App()
@@ -17,7 +18,7 @@ def test_Basics():
     with tempfile.TemporaryDirectory(prefix='.tmp') as tmp_dir:
         print(tmp_dir)
         # use temp_dir, and when done:
-        #tmp_dir.cleanup()
+        # tmp_dir.cleanup()
         tmp_file = str(pathlib.PurePath(tmp_dir, 'sqlite_bro_test_Basics.tmp'))
         welcome_text = """
 create table item (ItemNo, Description,Kg  , PRIMARY KEY (ItemNo));
@@ -29,10 +30,10 @@ select ItemNo, Description, 1000*Kg Gramm  from item order by ItemNo desc;
         app.n.new_query_tab("Welcome", welcome_text)
         app.run_tab()
         app.close_db
-	
+
         file_encoding = sqlite_bro.guess_encoding(tmp_file)[0]
         with io.open(tmp_file, mode='rt', encoding=file_encoding) as f:
             result = f.readlines()
-        assert_equal(len(result) , 4)
-        assert_equal(result[-1] , "A,Merced,1250000\n")
-        #os.remove(tmp_file)
+        assert_equal(len(result), 4)
+        assert_equal(result[-1], "A,Merced,1250000\n")
+        # os.remove(tmp_file)
