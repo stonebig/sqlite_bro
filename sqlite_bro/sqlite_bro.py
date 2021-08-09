@@ -5,7 +5,7 @@ from __future__ import print_function, unicode_literals, division  # Python2.7
 try:
     import argparse  # Python>=3.2
 except:
-    pass # Python<3.2
+    pass  # Python<3.2
 
 import sqlite3 as sqlite
 import sys
@@ -736,10 +736,10 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                         if shell_list[1].lower() == 'off':
                             self.default_header = False
                         elif shell_list[1].lower() == 'on':
-                            self.default_header = True                      
+                            self.default_header = True
                     if shell_list[0] == '.separator' and len(shell_list) >= 2:
                         self.default_separator = shell_list[1]
-                    if shell_list[0] in( '.once', '.output'):
+                    if shell_list[0] in ('.once', '.output'):
                         if shell_list[0] == '.once':
                             self.once_mode, self.init_output = True, True
                         else:
@@ -747,19 +747,19 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                         self.encode_in = 'utf-8'
                         if '--bom' in shell_list:  # keep access to the option
                             self.encode_in = 'utf-8-sig'
-                        if shell_list[1] =='--bom':
+                        if shell_list[1] == '--bom':
                             self.output_file = shell_list[2]
                         else:
                             self.output_file = shell_list[1]
                         if (self.output_file+"z")[0] == "~":
                             self.output_file = os.path.join(self.home, self.output_file[1:])
-                        if self.output_file is None or self.output_file =="":
+                        if self.output_file is None or self.output_file == "":
                             self.output_mode, self.init_output = False, False
                     if shell_list[0] == '.print':
                         if self.output_mode or self.once_mode:
                             write_mode = 'w' if self.init_output else 'a'  # Write or Append
                             with io.open(self.output_file, write_mode, encoding=self.encode_in) as fout:
-                                fout.writelines(instru[len('.print')+1:] +'\n')
+                                fout.writelines(instru[len('.print')+1:] + '\n')
                             self.init_output, self.once_mode = False, False
                     if shell_list[0] == '.import' and len(shell_list) >= 2:
                         csv_file = shell_list[1]
@@ -846,7 +846,7 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                         log.write("Error ! %s : %s" % (msg, instru))
                     sql_error = True
                     break
-            elif len("".join(instruction.split())) >1:  # PyPy answer 42 to blanks sql
+            elif len("".join(instruction.split())) > 1:  # PyPy answer 42 to blanks sql
                 try:
                     if self.output_mode or self.once_mode:
                         self.conn.export_writer(instruction, self.output_file,
@@ -863,7 +863,7 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                         rows = cur.fetchall()
                         # a query may have no result( like for an "update")
                         if cur.description is not None and \
-                            len(cur.description)>0:  # pypy needs this test
+                            len(cur.description) > 0:  # pypy needs this test
                             titles = [row_info[0] for
                                       row_info in cur.description]
                             self.n.add_treeview(
