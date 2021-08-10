@@ -38,7 +38,11 @@ jobs:
         
       # start virtual display driver 
       # (from https://github.com/miketrethewey/tkinter-test/blob/master/.github/workflows/ci.yml)
-    
+      
+    - name: Test with pytest
+      run: |
+        pytest -v
+
     - name: Start virtual display driver & Test (!windows)
       env:
         DISPLAY: :99
