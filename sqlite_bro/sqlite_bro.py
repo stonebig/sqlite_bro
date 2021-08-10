@@ -33,56 +33,72 @@ except ImportError:  # or we are still Python2.7
 tipwindow = None
 
 
+
 class App:
     """the GUI graphic application"""
 
-    def __init__(self):
+    def __init__(self, use_gui=True):
         """create a tkk graphic interface with a main window tk_win"""
         self.__version__ = "0.11.1"
         self._title = "of 2021-08-09b : 'Script me more !'"
         self.conn = None  # Baresql database object
         self.database_file = ""
-        self.tk_win = Tk()
-        self.tk_win.title(
-            "A graphic SQLite Client in 1 Python file (" + self.__version__ + ")"
-        )
-        self.tk_win.option_add("*tearOff", FALSE)  # hint of tk documentation
-        self.tk_win.minsize(600, 200)  # minimal size
-
-        self.font_size = 10
-        self.font_wheight = 0
         self.initialdir = "."
-        # With a Menubar and Toolbar
-        self.create_menu()
-        self.create_toolbar()
 
-        # Create style "ButtonNotebook"
-        self.create_style()
-        # Initiate Drag State
-        self.state_drag = False
-        self.state_drag_index = 0
 
-        # With a Panedwindow of two frames: 'Database' and 'Queries'
-        p = ttk.Panedwindow(self.tk_win, orient=HORIZONTAL)
-        p.pack(fill=BOTH, expand=1)
+        # Do we use a GUI ?
+        self.use_gui = use_gui  # gui ok by default
+        try:
+            self.tk_win = Tk()
+        except:
+            self.use_gui = False
+        
+        if self.use_gui:
+            self.tk_win.title(
+            "A graphic SQLite Client in 1 Python file (" + self.__version__ + ")"
+            )
+            self.tk_win.option_add("*tearOff", FALSE)  # hint of tk documentation
+            self.tk_win.minsize(600, 200)  # minimal size
 
-        f_database = ttk.Labelframe(p, text="Databases", width=200, height=100)
-        p.add(f_database)
-        f_queries = ttk.Labelframe(p, text="Queries", width=200, height=100)
-        p.add(f_queries)
+            self.font_size = 10
+            self.font_wheight = 0
+            # With a Menubar and Toolbar
+            self.create_menu()
+            self.create_toolbar()
 
-        # build tree view 't' inside the left 'Database' Frame
-        self.db_tree = ttk.Treeview(
-            f_database, displaycolumns=[], columns=("detail", "action")
-        )
-        self.db_tree.tag_configure("run")
-        self.db_tree.pack(fill=BOTH, expand=1)
+            # Create style "ButtonNotebook"
+            self.create_style()
+            # Initiate Drag State
+            self.state_drag = False
+            self.state_drag_index = 0
+        
 
-        # create a  notebook 'n' inside the right 'Queries' Frame
-        self.n = NotebookForQueries(self.tk_win, f_queries, [])
+            # With a Panedwindow of two frames: 'Database' and 'Queries'
+            p = ttk.Panedwindow(self.tk_win, orient=HORIZONTAL)
+            p.pack(fill=BOTH, expand=1)
 
-        # Bind keyboard shortcuts
-        self.tk_win.bind("<F9>", self.run_tab)
+            f_database = ttk.Labelframe(p, text="Databases", width=200, height=100)
+            p.add(f_database)
+            f_queries = ttk.Labelframe(p, text="Queries", width=200, height=100)
+            p.add(f_queries)
+
+            # build tree view 't' inside the left 'Database' Frame
+            self.db_tree = ttk.Treeview(
+                f_database, displaycolumns=[], columns=("detail", "action")
+            )
+            self.db_tree.tag_configure("run")
+            self.db_tree.pack(fill=BOTH, expand=1)
+
+            # create a  notebook 'n' inside the right 'Queries' Frame
+            self.n = NotebookForQueries(self.tk_win, f_queries, [],
+                                        self.use_gui)
+
+            # Bind keyboard shortcuts
+            self.tk_win.bind("<F9>", self.run_tab)
+        else:
+            # create a GUI-Less notebook 'n' 
+            self.n = NotebookForQueries(None, None, [], self.use_gui)
+
 
         # define default home directory
         self.home = expanduser("~")
@@ -321,6 +337,9 @@ class App:
 
     def actualize_db(self):
         """refresh the database view"""
+        if not self.use_gui:
+            return
+            
         # bind double-click for easy user interaction
         self.db_tree.tag_bind("run", "<Double-1>", self.t_doubleClicked)
         self.db_tree.tag_bind("run_up", "<Double-1>", self.t_doubleClicked)
@@ -362,6 +381,12 @@ class App:
 
     def run_tab(self, event=None):
         """clear previous results and run current script of a tab"""
+        if not self.use_gui:
+            active_tab_id = len(self.n.nongui_tabs) - 1
+            script = self.n.nongui_tabs[active_tab_id]
+            # print ("silently running,active_tab_id , script)  # testtmp
+            self.create_and_add_results(script, active_tab_id)
+            return
         active_tab_id = self.n.notebook.select()
         if active_tab_id != "":
             # remove previous results
@@ -983,6 +1008,8 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                     self.n.add_treeview(
                         tab_tk_id, ("Error !",), [(msg,)], "Error !", instru
                     )
+                    if not self.use_gui:
+                        print( "Error !",[msg])
                     if log is not None:  # write to logFile
                         log.write("Error ! %s : %s" % (msg, instru))
                     sql_error = True
@@ -1172,23 +1199,30 @@ class NotebookForQueries:
     """Create a Notebook with a list in the First frame
     and query results in following treeview frames"""
 
-    def __init__(self, tk_win, root, queries):
-        self.tk_win = tk_win
-        self.root = root
-        self.notebook = Notebook(root, style="ButtonNotebook")  # ttk.
+    def __init__(self, tk_win, root, queries, use_gui):
+        self.use_gui = use_gui
+        self.nongui_tabs =["",]
+        if self.use_gui:
+            self.tk_win = tk_win
+            self.root = root
+            self.notebook = Notebook(root, style="ButtonNotebook")  # ttk.
 
-        self.fw_labels = {}  # tab_tk_id -> Scripting frame python object
-        self.fw_result_nbs = {}  # tab_tk_id -> Notebook of Results
+            self.fw_labels = {}  # tab_tk_id -> Scripting frame python object
+            self.fw_result_nbs = {}  # tab_tk_id -> Notebook of Results
 
-        # resize rules
-        root.columnconfigure(0, weight=1)
-        root.rowconfigure(0, weight=1)
-        # grid widgets
-        self.notebook.grid(row=0, column=0, sticky=(N, W, S, E))
+            # resize rules
+            root.columnconfigure(0, weight=1)
+            root.rowconfigure(0, weight=1)
+            # grid widgets
+            self.notebook.grid(row=0, column=0, sticky=(N, W, S, E))
 
     def new_query_tab(self, title, query):
         """add a Tab 'title' to the notebook, containing the Script 'query'"""
 
+        if not self.use_gui:
+            self.nongui_tabs += [query]
+            return len(self.nongui_tabs) - 1
+            
         fw_welcome = ttk.Panedwindow(self.tk_win, orient=VERTICAL)  # tk_win
         fw_welcome.pack(fill="both", expand=True)
         self.notebook.add(fw_welcome, text=(title))
@@ -1244,6 +1278,8 @@ class NotebookForQueries:
 
     def add_treeview(self, given_tk_id, columns, data, title="__", subt=""):
         """add a dataset result to the given tab tk_id"""
+        if not self.use_gui:
+            return
         # ensure we work on lists
         if isinstance(columns, (type("e"), type("e"))):
             tree_columns = [columns]
@@ -2009,12 +2045,8 @@ DROP TABLE IF EXISTS toto.new_item;
 CREATE TABLE toto.new_item as select * from "main"."item";
 .dump
 """
-    # print(args)
-    app = App()
-    # start with a memory Database and a welcome
-    app.new_db(":memory:")
 
-    if "argparse" in globals():
+    if "argparse" in globals():  # not before Python-3.2
         parser = argparse.ArgumentParser(
             description="sqlite_bro : a graphic SQLite browser in 1 Python file"
         )
@@ -2038,6 +2070,13 @@ CREATE TABLE toto.new_item as select * from "main"."item";
             "-sc", "--scripts", type=str, help="qive a list of initial scripts"
         )
         args = parser.parse_args()
+
+        if args.quiet:
+            app = App(use_gui=False)
+        else:
+            app = App(use_gui=True)
+        # start with a memory Database and a welcome
+        app.new_db(":memory:")
         if args.database:
             app.open_db(args.database)
         if args.scripts:
@@ -2057,8 +2096,12 @@ CREATE TABLE toto.new_item as select * from "main"."item";
         if args.quiet:
             app.close_db
     else:
+        app = App(use_gui=True)
+        # start with a memory Database and a welcome
+        app.new_db(":memory:")
         app.n.new_query_tab("Welcome", welcome_text)
-    app.tk_win.mainloop()
+    if app.use_gui:
+        app.tk_win.mainloop()
 
 
 if __name__ == "__main__":
