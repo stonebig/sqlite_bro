@@ -249,17 +249,20 @@ class App:
             with io.open(filename, encoding=guess_encoding(filename)[0]) as f:
                 script = f.read()
                 sqls = self.conn.get_sqlsplit(script, remove_comments=True)
-                dg = [s for s in sqls if s.strip(" \t\n\r")[:5] == "pydef"]
+                dg = [s for s in sqls if s.strip(" \t\n\r")[:5].lower() 
+                      in ("pydef", ".read" , ".shel") or 
+                      s.strip(" \t\n\r")[:1].lower() =="."
+                      ]
                 if dg:
                     fields = [
                         "",
                         ["In Script File:", filename, "r", 100],
                         "",
-                        ["Python Script", "".join(dg), "r", 80, 20],
+                        ["non pure SQL code", "\n".join(dg), "r", 80, 20],
                     ]
 
                     create_dialog(
-                        ("Ok for this Python Code ?"),
+                        ("Ok for this non pure SQL code ?"),
                         fields,
                         ("Confirm", self.load_script_ok),
                         [text, script],
@@ -854,6 +857,8 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                 try:
                     if shell_list[0] == ".cd" and len(shell_list) >= 2:
                         db_file = shell_list[1]
+                        self.db_file = self.db_file.strip("'")
+                        self.db_file = self.db_file.strip('"')
                         if (db_file + "z")[0] == "~":
                             self.current_directory = os.path.join(
                                 self.home, db_file[1:]
@@ -889,6 +894,8 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                             self.output_file = shell_list[2]
                         else:
                             self.output_file = shell_list[1]
+                        self.output_file = self.output_file.strip("'")
+                        self.output_file = self.output_file.strip('"')
                         if (self.output_file + "z")[0] == "~":
                             self.output_file = os.path.join(
                                 self.home, self.output_file[1:]
@@ -907,6 +914,8 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                             self.init_output, self.once_mode = False, False
                     if shell_list[0] == ".import" and len(shell_list) >= 2:
                         csv_file = shell_list[1]
+                        self.csv_file = self.csv_file.strip("'")
+                        self.csv_file = self.csv_file.strip('"')
                         if (csv_file + "z")[0] == "~":
                             csv_file = os.path.join(self.home, csv_file[1:])
                         guess = guess_csv(csv_file)
@@ -951,6 +960,8 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                     if shell_list[0] == ".dump":
                         if len(shell_list) >= 2:
                             csv_file = shell_list[1]
+                            self.csv_file = self.csv_file.strip("'")
+                            self.csv_file = self.csv_file.strip('"')
                             if (csv_file + "z")[0] == "~":
                                 csv_file = os.path.join(self.home, csv_file[1:])
                             with io.open(csv_file, "w", encoding="utf-8") as f:
@@ -966,6 +977,8 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                             )
                     if shell_list[0] == ".read" and len(shell_list) >= 2:
                         filename = shell_list[1]
+                        self.filename = self.filename.strip("'")
+                        self.filename = self.filename.strip('"')
                         if (filename + "z")[0] == "~":
                             filename = os.path.join(self.home, filename[1:])
                         with io.open(
@@ -1002,6 +1015,8 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                         with db_to:
                             self.conn.conn.backup(db_to)
                         db_to.close()
+                    if shell_list[0] == ".shell" and len(shell_list) >= 2:
+                        os.system(instru[len(".print") + 1:] + "\n")
 
                 except IOError as err:
                     msg = "I/O error: {0}".format(err)
@@ -2033,12 +2048,13 @@ RELEASE SAVEPOINT remember_Neo; -- free memory
 -- .read FILE             Read input from FILE
 -- .restore FILE          Restore content of DB (default "main") from FILE
 -- .separator COL         Set column separator in next .once exports (default ,)
+-- .shell CMD ARGS...     Run CMD ARGS... in a system shell
 
 .headers on
 .separator ;
-.once --bom '~this_file_of_result.txt'
+.once --bom  '~this_file_of result.txt'
 select ItemNo, Description from item order by ItemNo desc;
-.import '~this_file_of_result.txt' in_this_table
+.import '~this_file_of result.txt' in_this_table
 .cd ~
 ATTACH 'test.db' as toto;
 DROP TABLE IF EXISTS toto.new_item;
