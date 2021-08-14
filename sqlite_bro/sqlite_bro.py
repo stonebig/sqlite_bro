@@ -16,6 +16,8 @@ import datetime
 import io
 import shlex  # Simple lexical analysis
 from os.path import expanduser
+import tempfile as tmpf
+import subprocess
 
 try:  # We are Python 3.3+
     from tkinter import *
@@ -33,7 +35,6 @@ except ImportError:  # or we are still Python2.7
 tipwindow = None
 
 
-
 class App:
     """the GUI graphic application"""
 
@@ -45,17 +46,16 @@ class App:
         self.database_file = ""
         self.initialdir = "."
 
-
         # Do we use a GUI ?
         self.use_gui = use_gui  # gui ok by default
         try:
             self.tk_win = Tk()
         except:
             self.use_gui = False
-        
+
         if self.use_gui:
             self.tk_win.title(
-            "A graphic SQLite Client in 1 Python file (" + self.__version__ + ")"
+                "A graphic SQLite Client in 1 Python file (" + self.__version__ + ")"
             )
             self.tk_win.option_add("*tearOff", FALSE)  # hint of tk documentation
             self.tk_win.minsize(600, 200)  # minimal size
@@ -71,7 +71,6 @@ class App:
             # Initiate Drag State
             self.state_drag = False
             self.state_drag_index = 0
-        
 
             # With a Panedwindow of two frames: 'Database' and 'Queries'
             p = ttk.Panedwindow(self.tk_win, orient=HORIZONTAL)
@@ -90,15 +89,13 @@ class App:
             self.db_tree.pack(fill=BOTH, expand=1)
 
             # create a  notebook 'n' inside the right 'Queries' Frame
-            self.n = NotebookForQueries(self.tk_win, f_queries, [],
-                                        self.use_gui)
+            self.n = NotebookForQueries(self.tk_win, f_queries, [], self.use_gui)
 
             # Bind keyboard shortcuts
             self.tk_win.bind("<F9>", self.run_tab)
         else:
-            # create a GUI-Less notebook 'n' 
+            # create a GUI-Less notebook 'n'
             self.n = NotebookForQueries(None, None, [], self.use_gui)
-
 
         # define default home directory
         self.home = expanduser("~")
@@ -114,6 +111,7 @@ class App:
         self.output_file = None
         self.init_output = True
         self.output_mode = False
+        self.x_mode = False
 
     def create_menu(self):
         """create the menu of the application"""
@@ -249,10 +247,12 @@ class App:
             with io.open(filename, encoding=guess_encoding(filename)[0]) as f:
                 script = f.read()
                 sqls = self.conn.get_sqlsplit(script, remove_comments=True)
-                dg = [s for s in sqls if s.strip(" \t\n\r")[:5].lower() 
-                      in ("pydef", ".read" , ".shel") or 
-                      s.strip(" \t\n\r")[:1].lower() =="."
-                      ]
+                dg = [
+                    s
+                    for s in sqls
+                    if s.strip(" \t\n\r")[:5].lower() in ("pydef", ".read", ".shel")
+                    or s.strip(" \t\n\r")[:1].lower() == "."
+                ]
                 if dg:
                     fields = [
                         "",
@@ -342,7 +342,7 @@ class App:
         """refresh the database view"""
         if not self.use_gui:
             return
-            
+
         # bind double-click for easy user interaction
         self.db_tree.tag_bind("run", "<Double-1>", self.t_doubleClicked)
         self.db_tree.tag_bind("run_up", "<Double-1>", self.t_doubleClicked)
@@ -857,8 +857,8 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                 try:
                     if shell_list[0] == ".cd" and len(shell_list) >= 2:
                         db_file = shell_list[1]
-                        self.db_file = self.db_file.strip("'")
-                        self.db_file = self.db_file.strip('"')
+                        db_file = db_file.strip("'")
+                        db_file = db_file.strip('"')
                         if (db_file + "z")[0] == "~":
                             self.current_directory = os.path.join(
                                 self.home, db_file[1:]
@@ -882,11 +882,14 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                             self.default_header = True
                     if shell_list[0] == ".separator" and len(shell_list) >= 2:
                         self.default_separator = shell_list[1]
-                    if shell_list[0] in (".once", ".output"):
+                    if shell_list[0] in (".once", ".output", ".excel"):
+                        if shell_list[0] == ".excel":
+                            shell_list= [".once" , "--bom" , "-x"]
                         if shell_list[0] == ".once":
                             self.once_mode, self.init_output = True, True
                         else:
                             self.output_mode, self.init_output = True, True
+                        self.x_mode = False
                         self.encode_in = "utf-8"
                         if "--bom" in shell_list:  # keep access to the option
                             self.encode_in = "utf-8-sig"
@@ -896,6 +899,11 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                             self.output_file = shell_list[1]
                         self.output_file = self.output_file.strip("'")
                         self.output_file = self.output_file.strip('"')
+                        if (self.output_file + "") == "-x":
+                            self.x_mode = True
+                            ff = tmpf.NamedTemporaryFile(delete=False, suffix=".csv")
+                            self.output_file = ff.name
+                            ff.close
                         if (self.output_file + "z")[0] == "~":
                             self.output_file = os.path.join(
                                 self.home, self.output_file[1:]
@@ -910,12 +918,12 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                             with io.open(
                                 self.output_file, write_mode, encoding=self.encode_in
                             ) as fout:
-                                fout.writelines(instru[len(".print") + 1:] + "\n")
+                                fout.writelines(instru[len(".print") + 1 :] + "\n")
                             self.init_output, self.once_mode = False, False
                     if shell_list[0] == ".import" and len(shell_list) >= 2:
                         csv_file = shell_list[1]
-                        self.csv_file = self.csv_file.strip("'")
-                        self.csv_file = self.csv_file.strip('"')
+                        csv_file = csv_file.strip("'")
+                        csv_file = csv_file.strip('"')
                         if (csv_file + "z")[0] == "~":
                             csv_file = os.path.join(self.home, csv_file[1:])
                         guess = guess_csv(csv_file)
@@ -960,8 +968,8 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                     if shell_list[0] == ".dump":
                         if len(shell_list) >= 2:
                             csv_file = shell_list[1]
-                            self.csv_file = self.csv_file.strip("'")
-                            self.csv_file = self.csv_file.strip('"')
+                            csv_file = csv_file.strip("'")
+                            csv_file = csv_file.strip('"')
                             if (csv_file + "z")[0] == "~":
                                 csv_file = os.path.join(self.home, csv_file[1:])
                             with io.open(csv_file, "w", encoding="utf-8") as f:
@@ -977,8 +985,8 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                             )
                     if shell_list[0] == ".read" and len(shell_list) >= 2:
                         filename = shell_list[1]
-                        self.filename = self.filename.strip("'")
-                        self.filename = self.filename.strip('"')
+                        filename = filename.strip("'")
+                        filename = filename.strip('"')
                         if (filename + "z")[0] == "~":
                             filename = os.path.join(self.home, filename[1:])
                         with io.open(
@@ -1016,7 +1024,7 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                             self.conn.conn.backup(db_to)
                         db_to.close()
                     if shell_list[0] == ".shell" and len(shell_list) >= 2:
-                        os.system(instru[len(".print") + 1:] + "\n")
+                        os.system(instru[len(".print") + 1 :] + "\n")
 
                 except IOError as err:
                     msg = "I/O error: {0}".format(err)
@@ -1024,7 +1032,7 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                         tab_tk_id, ("Error !",), [(msg,)], "Error !", instru
                     )
                     if not self.use_gui:
-                        print( "Error !",[msg])
+                        print("Error !", [msg])
                     if log is not None:  # write to logFile
                         log.write("Error ! %s : %s" % (msg, instru))
                     sql_error = True
@@ -1041,6 +1049,14 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                             initialize=self.init_output,
                         )
                         self.once_mode, self.init_output = False, False
+                        if self.x_mode:
+                            os.system(
+                                "start excel.exe "
+                                + self.output_file.replace("\\", "/")
+                            )
+                            ff = tmpf.NamedTemporaryFile(delete=False, suffix=".csv")
+                            self.output_file = ff.name
+                            ff.close
                         self.n.add_treeview(
                             tab_tk_id,
                             ("qry", "file"),
@@ -1216,7 +1232,9 @@ class NotebookForQueries:
 
     def __init__(self, tk_win, root, queries, use_gui):
         self.use_gui = use_gui
-        self.nongui_tabs =["",]
+        self.nongui_tabs = [
+            "",
+        ]
         if self.use_gui:
             self.tk_win = tk_win
             self.root = root
@@ -1237,7 +1255,7 @@ class NotebookForQueries:
         if not self.use_gui:
             self.nongui_tabs += [query]
             return len(self.nongui_tabs) - 1
-            
+
         fw_welcome = ttk.Panedwindow(self.tk_win, orient=VERTICAL)  # tk_win
         fw_welcome.pack(fill="both", expand=True)
         self.notebook.add(fw_welcome, text=(title))
