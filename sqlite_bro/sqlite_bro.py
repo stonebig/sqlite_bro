@@ -40,8 +40,8 @@ class App:
 
     def __init__(self, use_gui=True):
         """create a tkk graphic interface with a main window tk_win"""
-        self.__version__ = "0.11.1"
-        self._title = "of 2021-08-09b : 'Script me more !'"
+        self.__version__ = "0.12.0"
+        self._title = "of 2021-08-14a : 'Pop-up result to .excel !'"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.initialdir = "."
@@ -884,7 +884,7 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                         self.default_separator = shell_list[1]
                     if shell_list[0] in (".once", ".output", ".excel"):
                         if shell_list[0] == ".excel":
-                            shell_list= [".once" , "--bom" , "-x"]
+                            shell_list = [".once", "--bom", "-x"]
                         if shell_list[0] == ".once":
                             self.once_mode, self.init_output = True, True
                         else:
@@ -901,9 +901,11 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                         self.output_file = self.output_file.strip('"')
                         if (self.output_file + "") == "-x":
                             self.x_mode = True
-                            ff = tmpf.NamedTemporaryFile(delete=False, suffix=".csv")
-                            self.output_file = ff.name
-                            ff.close
+                            with tmpf.TemporaryFile() as ff:
+                                ff = tmpf.NamedTemporaryFile(
+                                    delete=False, suffix="_sqlite_bro.csv"
+                                )
+                                self.output_file = ff.name
                         if (self.output_file + "z")[0] == "~":
                             self.output_file = os.path.join(
                                 self.home, self.output_file[1:]
@@ -1049,14 +1051,6 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                             initialize=self.init_output,
                         )
                         self.once_mode, self.init_output = False, False
-                        if self.x_mode:
-                            os.system(
-                                "start excel.exe "
-                                + self.output_file.replace("\\", "/")
-                            )
-                            ff = tmpf.NamedTemporaryFile(delete=False, suffix=".csv")
-                            self.output_file = ff.name
-                            ff.close
                         self.n.add_treeview(
                             tab_tk_id,
                             ("qry", "file"),
@@ -1064,6 +1058,15 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                             "Info",
                             ".once %s" % self.output_file,
                         )
+                        if self.x_mode:
+                            os.system(
+                                "start excel.exe " + self.output_file.replace("\\", "/")
+                            )
+                            with tmpf.TemporaryFile() as ff:
+                                ff = tmpf.NamedTemporaryFile(
+                                    delete=False, suffix="_sqlite_bro.csv"
+                                )
+                                self.output_file = ff.name
                     else:
                         cur = cu.execute(instruction)
                         rows = cur.fetchall()
@@ -2056,6 +2059,7 @@ RELEASE SAVEPOINT remember_Neo; -- free memory
 -- .backup FILE           Backup DB (default "main") to FILE
 -- .cd DIRECTORY          Change the working directory to DIRECTORY
 -- .dump ?FILE?           Render database content as SQL (to FILE if specified)
+-- .excel                 Display the output of next command in spreadsheet
 -- .headers on|off        Turn display of headers on or off
 -- .import FILE TABLE     Import data from FILE into TABLE
 --                        (create TABLE only if it doesn't exist, keep existing records)
