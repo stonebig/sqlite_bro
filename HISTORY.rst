@@ -1,6 +1,14 @@
 Changelog
 =========
 
+2021-08-15a : v0.12.0 'Script me more!'
+---------------------------------------
+
+* '.backup' and '.restore' functions are accessible via menu
+
+* can run in an enviromment without DISPLAY
+
+
 
 2021-08-09b : v0.11.1 'Script me more!'
 ---------------------------------------

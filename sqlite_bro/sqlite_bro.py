@@ -137,6 +137,10 @@ class App:
         self.menu.add_command(label="Close Database", command=self.close_db)
         self.menu.add_separator()
         self.menu.add_command(label="Attach Database", command=self.attach_db)
+        if sys.version_info[:2] >= (3 , 7):
+            self.menu.add_separator()
+            self.menu.add_command(label="Backup current Database", command=self.backup_db)
+            self.menu.add_command(label="Restore into current Database", command=self.restore_db)
         self.menu.add_separator()
         self.menu.add_command(label="Quit", command=self.quit_db)
 
@@ -232,6 +236,43 @@ class App:
             self.set_initialdir(filename)
             self.database_file = filename
             self.conn = Baresql(self.database_file)
+            self.actualize_db()
+
+    def backup_db(self, filename="", isolation_level=None):
+        """Backup the current database"""
+        if filename == "":
+            filename = filedialog.asksaveasfilename(
+                initialdir=self.initialdir,
+                defaultextension=".db",
+                title="Define a new database name and location",
+                filetypes=[("default", "*.db"), ("other", "*.db*"), ("all", "*.*")],
+            )
+        if filename != "":
+            if os.path.isfile(filename):
+                self.set_initialdir(filename)
+                if messagebox.askyesno(
+                    message="Confirm Destruction of previous Datas ?",
+                    icon="question",
+                    title="Destroying",
+                ):
+                    os.remove(filename)
+                    db_to = sqlite.connect(filename)
+                    self.conn.conn.backup(db_to)
+                    db_to.close()
+                    self.actualize_db()
+
+    def restore_db(self, filename="", isolation_level=None):
+        """Restore an existing database into current one"""
+        if filename == "":
+            filename = filedialog.askopenfilename(
+                initialdir=self.initialdir,
+                defaultextension=".db",
+                filetypes=[("default", "*.db"), ("other", "*.db*"), ("all", "*.*")],
+            )
+        if filename != "":
+            db_from = sqlite.connect(filename)
+            db_from.backup(self.conn.conn)
+            db_from.close
             self.actualize_db()
 
     def load_script(self):
@@ -1013,8 +1054,7 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                         if (filename + "z")[0] == "~":
                             filename = os.path.join(self.home, filename[1:])
                         db_from = sqlite.connect(filename)
-                        with db_from:
-                            db_from.backup(self.conn.conn)
+                        db_from.backup(self.conn.conn)
                         db_from.close
                         self.actualize_db()
                     if shell_list[0] == ".backup" and len(shell_list) >= 2:
@@ -1022,8 +1062,7 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                         if (filename + "z")[0] == "~":
                             filename = os.path.join(self.home, filename[1:])
                         db_to = sqlite.connect(filename)
-                        with db_to:
-                            self.conn.conn.backup(db_to)
+                        self.conn.conn.backup(db_to)
                         db_to.close()
                     if shell_list[0] == ".shell" and len(shell_list) >= 2:
                         os.system(instru[len(".print") + 1 :] + "\n")
@@ -1983,6 +2022,7 @@ class Baresql:
                         [i if isinstance(i, str) else i[0] for i in cursor.description]
                     )  # PyPy as a strange list of list
                 writer.writerows(cursor.fetchall())
+                fout.close  # PyPy3-7.3.5 needs that close
         else:  # python2.7 (minimal)
             write_mode = "wb" if initialize else "ab"  # Write or Append
             with io.open(csv_file, write_mode) as fout:
@@ -1997,7 +2037,7 @@ class Baresql:
                         [i if isinstance(i, str) else i[0] for i in cursor.description]
                     )  # heading row with anti-PyPy bug
                 writer.writerows(cursor.fetchall())
-
+                fout.close  # PyPy3-7.3.5 needs that close
 
 def _main():
     welcome_text = """-- SQLite Memo (Demo = click on green "->" and "@" icons)
@@ -2056,7 +2096,7 @@ SELECT ItemNo, Description FROM Item;  -- see all is back to normal
 RELEASE SAVEPOINT remember_Neo; -- free memory
 
 \n\n-- '.' commands understood:
--- .backup FILE           Backup DB (default "main") to FILE
+-- .backup FILE           Backup DB (default "main") to FILE (if Python>=3.7)
 -- .cd DIRECTORY          Change the working directory to DIRECTORY
 -- .dump ?FILE?           Render database content as SQL (to FILE if specified)
 -- .excel                 Display the output of next command in spreadsheet
@@ -2068,7 +2108,7 @@ RELEASE SAVEPOINT remember_Neo; -- free memory
 -- .output ?FILE?         Send output to FILE or stdout if FILE is omitted
 -- .print STRING...       Print literal STRING
 -- .read FILE             Read input from FILE
--- .restore FILE          Restore content of DB (default "main") from FILE
+-- .restore FILE          Restore DB (default "main") from FILE (if Python>=3.7)
 -- .separator COL         Set column separator in next .once exports (default ,)
 -- .shell CMD ARGS...     Run CMD ARGS... in a system shell
 
