@@ -40,8 +40,8 @@ class App:
 
     def __init__(self, use_gui=True):
         """create a tkk graphic interface with a main window tk_win"""
-        self.__version__ = "0.12.0"
-        self._title = "of 2021-08-14a : 'Pop-up result to .excel !'"
+        self.__version__ = "0.12.1"
+        self._title = "of 2021-08-15a : 'Pop-up results to .excel !'"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.initialdir = "."
@@ -137,10 +137,12 @@ class App:
         self.menu.add_command(label="Close Database", command=self.close_db)
         self.menu.add_separator()
         self.menu.add_command(label="Attach Database", command=self.attach_db)
-        if sys.version_info[:2] >= (3 , 7):
+        if sys.version_info[:2] >= (3, 7):
             self.menu.add_separator()
-            self.menu.add_command(label="Backup current Database", command=self.backup_db)
-            self.menu.add_command(label="Restore into current Database", command=self.restore_db)
+            self.menu.add_command(label="Backup main Database", command=self.backup_db)
+            self.menu.add_command(
+                label="Restore into main Database", command=self.restore_db
+            )
         self.menu.add_separator()
         self.menu.add_command(label="Quit", command=self.quit_db)
 
@@ -190,6 +192,12 @@ class App:
             ("sqlin_img", self.load_script, "Load a SQL script file"),
             ("sqlsav_img", self.sav_script, "Save a SQL script in a file"),
             ("chgsz_img", self.chg_fontsize, "Modify font size"),
+            (
+                "img_run_temp",
+                self.run_temp,
+                "Run script selection and Display output in temporary files",
+            ),
+            ("img_clean_temp", self.clean_temp, "Remove old temporary files"),
         ]
 
         for img, action, tip in to_show:
@@ -467,6 +475,41 @@ class App:
             self.create_and_add_results(script, active_tab_id, limit=99, log=f)
             fw.focus_set()  # workaround bug http://bugs.python.org/issue17511
 
+    def run_temp(self):
+        """run selected script commands and display results via tmp files"""
+        # backup existing defaults
+        once_mode_bkp = self.once_mode
+        encode_in_bkp = self.encode_in
+        output_file_bkp = self.output_file
+        init_output_bkp = self.init_output
+        output_mode_bkp = self.output_mode
+        x_mode_bkp = self.x_mode
+
+        active_tab_id = self.n.notebook.select()
+        if active_tab_id != "":
+            self.n.remove_treeviews(active_tab_id)
+
+        if active_tab_id != "":
+            # get current selection (or all)
+            fw = self.n.fw_labels[active_tab_id]
+            fw = self.n.fw_labels[active_tab_id]
+            try:
+                query = fw.get("sel.first", "sel.last")
+            except:
+                query = fw.get(1.0, END)[:-1]
+            query = "\n.output --bom -x \n" + query
+            # print("run temp", query)
+            self.create_and_add_results(query, active_tab_id)
+            fw.focus_set()  # workaround bug http://bugs.python.org/issue17511
+
+        # restore previous defaults
+        self.once_mode = once_mode_bkp
+        self.encode_in = encode_in_bkp
+        self.output_file = output_file_bkp
+        self.init_output = init_output_bkp
+        self.output_mode = output_mode_bkp
+        self.x_mode = x_mode_bkp
+
     def chg_fontsize(self):
         """change the display font size"""
         sizes = [10, 13, 14]
@@ -495,6 +538,37 @@ class App:
             default_font.configure(
                 size=self.font_size, weight=ww[self.font_wheight], family=ff
             )
+
+    def clean_temp(self):
+        """clear temp directory"""
+        ff = tmpf.NamedTemporaryFile(delete=True, suffix="_sqlite_bro.csv").name
+        temp_directory = os.path.dirname(ff)
+        report = [
+            ("", ""),
+        ]
+        for file in os.listdir(temp_directory):
+            if file.endswith("_sqlite_bro.csv"):
+                print("removing ", os.path.join(temp_directory, file))
+                try:
+                    os.remove(os.path.join(temp_directory, file))
+                    report += [
+                        ("removing ", os.path.join(temp_directory, file)),
+                    ]
+                except PermissionError:
+                    report += [
+                        ("PermissionError ", os.path.join(temp_directory, file)),
+                    ]
+
+        active_tab_id = self.n.notebook.select()
+        if active_tab_id != "":
+            self.n.remove_treeviews(active_tab_id)
+        self.n.add_treeview(
+            active_tab_id,
+            ("Cleanup", "file"),
+            (report),
+            "Cleanup",
+            ".Cleaning tmp files",
+        )
 
     def t_doubleClicked(self, event):
         """launch action when dbl_click on the Database structure"""
@@ -592,6 +666,43 @@ GDBEA0qNJyGw7AmxmuaZhWEU5kEJADs=
 """,
             "img_closepressed": """\
 R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
+""",
+            "img_run_temp": """\
+R0lGODlhGAAYAHAAACH5BAEAAPwALAAAAAAYABgAhwAAAAAAMwAAZgAAmQAAzAAA/wArAAArMwAr
+ZgArmQArzAAr/wBVAABVMwBVZgBVmQBVzABV/wCAAACAMwCAZgCAmQCAzACA/wCqAACqMwCqZgCq
+mQCqzACq/wDVAADVMwDVZgDVmQDVzADV/wD/AAD/MwD/ZgD/mQD/zAD//zMAADMAMzMAZjMAmTMA
+zDMA/zMrADMrMzMrZjMrmTMrzDMr/zNVADNVMzNVZjNVmTNVzDNV/zOAADOAMzOAZjOAmTOAzDOA
+/zOqADOqMzOqZjOqmTOqzDOq/zPVADPVMzPVZjPVmTPVzDPV/zP/ADP/MzP/ZjP/mTP/zDP//2YA
+AGYAM2YAZmYAmWYAzGYA/2YrAGYrM2YrZmYrmWYrzGYr/2ZVAGZVM2ZVZmZVmWZVzGZV/2aAAGaA
+M2aAZmaAmWaAzGaA/2aqAGaqM2aqZmaqmWaqzGaq/2bVAGbVM2bVZmbVmWbVzGbV/2b/AGb/M2b/
+Zmb/mWb/zGb//5kAAJkAM5kAZpkAmZkAzJkA/5krAJkrM5krZpkrmZkrzJkr/5lVAJlVM5lVZplV
+mZlVzJlV/5mAAJmAM5mAZpmAmZmAzJmA/5mqAJmqM5mqZpmqmZmqzJmq/5nVAJnVM5nVZpnVmZnV
+zJnV/5n/AJn/M5n/Zpn/mZn/zJn//8wAAMwAM8wAZswAmcwAzMwA/8wrAMwrM8wrZswrmcwrzMwr
+/8xVAMxVM8xVZsxVmcxVzMxV/8yAAMyAM8yAZsyAmcyAzMyA/8yqAMyqM8yqZsyqmcyqzMyq/8zV
+AMzVM8zVZszVmczVzMzV/8z/AMz/M8z/Zsz/mcz/zMz///8AAP8AM/8AZv8Amf8AzP8A//8rAP8r
+M/8rZv8rmf8rzP8r//9VAP9VM/9VZv9Vmf9VzP9V//+AAP+AM/+AZv+Amf+AzP+A//+qAP+qM/+q
+Zv+qmf+qzP+q///VAP/VM//VZv/Vmf/VzP/V////AP//M///Zv//mf//zP///wAAAAAAAAAAAAAA
+AAiFAPcJHEiwoMGDBgEo3Lew4UKEAwEIlEiRoUWIEzNmVCgR48WOFkF6HEmypMmTAqWpXIky5Upp
+LV2qPDikps2bNV/CNFhzH06bLGfyHDIQ50qi+3YW7Ekwp0qmCKESfCp1KESbGKsuzZAVKU2tTb0S
+zHCz69KfZgX+xHqVKNm1YIvCxYkxIAA7
+""",
+            "img_clean_temp": """\
+R0lGODlhGAAYAHAAACwAAAAAGAAYAIcAAAAAADMAAGYAAJkAAMwAAP8AKwAAKzMAK2YAK5kAK8wA
+K/8AVQAAVTMAVWYAVZkAVcwAVf8AgAAAgDMAgGYAgJkAgMwAgP8AqgAAqjMAqmYAqpkAqswAqv8A
+1QAA1TMA1WYA1ZkA1cwA1f8A/wAA/zMA/2YA/5kA/8wA//8zAAAzADMzAGYzAJkzAMwzAP8zKwAz
+KzMzK2YzK5kzK8wzK/8zVQAzVTMzVWYzVZkzVcwzVf8zgAAzgDMzgGYzgJkzgMwzgP8zqgAzqjMz
+qmYzqpkzqswzqv8z1QAz1TMz1WYz1Zkz1cwz1f8z/wAz/zMz/2Yz/5kz/8wz//9mAABmADNmAGZm
+AJlmAMxmAP9mKwBmKzNmK2ZmK5lmK8xmK/9mVQBmVTNmVWZmVZlmVcxmVf9mgABmgDNmgGZmgJlm
+gMxmgP9mqgBmqjNmqmZmqplmqsxmqv9m1QBm1TNm1WZm1Zlm1cxm1f9m/wBm/zNm/2Zm/5lm/8xm
+//+ZAACZADOZAGaZAJmZAMyZAP+ZKwCZKzOZK2aZK5mZK8yZK/+ZVQCZVTOZVWaZVZmZVcyZVf+Z
+gACZgDOZgGaZgJmZgMyZgP+ZqgCZqjOZqmaZqpmZqsyZqv+Z1QCZ1TOZ1WaZ1ZmZ1cyZ1f+Z/wCZ
+/zOZ/2aZ/5mZ/8yZ///MAADMADPMAGbMAJnMAMzMAP/MKwDMKzPMK2bMK5nMK8zMK//MVQDMVTPM
+VWbMVZnMVczMVf/MgADMgDPMgGbMgJnMgMzMgP/MqgDMqjPMqmbMqpnMqszMqv/M1QDM1TPM1WbM
+1ZnM1czM1f/M/wDM/zPM/2bM/5nM/8zM////AAD/ADP/AGb/AJn/AMz/AP//KwD/KzP/K2b/K5n/
+K8z/K///VQD/VTP/VWb/VZn/Vcz/Vf//gAD/gDP/gGb/gJn/gMz/gP//qgD/qjP/qmb/qpn/qsz/
+qv//1QD/1TP/1Wb/1Zn/1cz/1f///wD//zP//2b//5n//8z///8AAAAAAAAAAAAAAAAIcwD3CRxI
+sKDBgwgTKlzIUKEfPw0T/qES8SAViBUL+vmTsSAVjh0H/sEYct/FkgJHojRJMqM9P1VaVrRHE2ZJ
+e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
 """,
         }
         return {k: PhotoImage(k, data=v) for k, v in icons.items()}
@@ -1079,9 +1190,10 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                     sql_error = True
                     break
             elif len("".join(instruction.split())) > 1:  # PyPy answer 42 to blanks sql
+                nb_columns = -1
                 try:
                     if self.output_mode or self.once_mode:
-                        self.conn.export_writer(
+                        nb_columns = self.conn.export_writer(
                             instruction,
                             self.output_file,
                             header=self.default_header,
@@ -1089,15 +1201,18 @@ R0lGODdhCAAIAIgAAPAAAP///ywAAAAACAAIAAACDkyAeJYM7FR8Ex7aVpIFADs=
                             encoding=self.encode_in,
                             initialize=self.init_output,
                         )
-                        self.once_mode, self.init_output = False, False
-                        self.n.add_treeview(
-                            tab_tk_id,
-                            ("qry", "file"),
-                            ((instruction, self.output_file),),
-                            "Info",
-                            ".once %s" % self.output_file,
-                        )
-                        if self.x_mode:
+                        if nb_columns > 0:
+                            self.once_mode, self.init_output = False, False
+                        if nb_columns > 0:
+                            self.n.add_treeview(
+                                tab_tk_id,
+                                ("qry_to_csv", "file"),
+                                ((instruction, self.output_file),),
+                                "Qry",
+                                # ".once %s" % self.output_file,
+                                first_line,
+                            )
+                        if self.x_mode and nb_columns > 0:
                             os.system(
                                 "start excel.exe " + self.output_file.replace("\\", "/")
                             )
@@ -2007,9 +2122,14 @@ class Baresql:
         quotechar='"',
         initialize=True,
     ):
-        """export a csv table (action)"""
+        """export a csv table and return number of columns"""
         cursor = self.conn.cursor()
         cursor.execute(sql)
+        # do nothing if nothing
+        if cursor.description is None or len(cursor.description) == 0:
+            return -1
+        else:
+            nb_columns = len(cursor.description)
         # with PyPy, the "with io.open" for is more than necessary
         if sys.version_info[0] != 2:  # python3
             write_mode = "w" if initialize else "a"  # Write or Append
@@ -2038,6 +2158,8 @@ class Baresql:
                     )  # heading row with anti-PyPy bug
                 writer.writerows(cursor.fetchall())
                 fout.close  # PyPy3-7.3.5 needs that close
+        return nb_columns
+
 
 def _main():
     welcome_text = """-- SQLite Memo (Demo = click on green "->" and "@" icons)
@@ -2055,25 +2177,17 @@ CREATE VIEW v1 as select * from item inner join part as p ON ItemNo=p.ParentNo;
 INSERT INTO item values("T","Ford",1000);
 INSERT INTO item select "A","Merced",1250 union all select "W","Wheel",9 ;
 INSERT INTO part select ItemNo,"W","needed",Kg/250 from item where Kg>250;
-\n-- to CREATE a Python embedded function (enclose them by "py" and ";") :
+\n-- to CREATE a Python embedded function, enclose them by "py" and ";" :
 pydef py_hello():
     "hello world"
     return ("Hello, World !");
-pydef py_sin(s):
-    "sinus function : example loading module, handling input/output as strings"
-    import math as py_math
-    return ("%s" %  py_math.sin(s*1));
 pydef py_fib(n):
    "fibonacci : example with function call (may only be internal) "
    fib = lambda n: n if n < 2 else fib(n-1) + fib(n-2)
    return("%s" % fib(n*1));
-pydef py_power(x,
-               y):
-    "power function : example loading module, handling input/output as strings"
-    import math as py_math
-    return ("%s" %  ((x*1) ** (y*1)) );
-\n-- to USE a python embedded function and nesting of embedded functions:
-select py_hello(), py_sin(1) as sinus, py_power(2, 1*py_fib(6)) as power, sqlite_version();
+
+-- to USE a python embedded function and nesting of embedded functions:
+select py_hello(), py_fib(6) as fibonacci, sqlite_version();
 \n-- to EXPORT :
 --    a TABLE, select TABLE, then click on icon 'SQL->CSV'
 --    a QUERY RESULT, select the SCRIPT text, then click on icon '???->CSV',

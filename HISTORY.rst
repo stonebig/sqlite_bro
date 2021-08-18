@@ -1,13 +1,14 @@
 Changelog
 =========
 
-2021-08-15a : v0.12.0 'Script me more!'
----------------------------------------
+2021-08-15a : v0.12.1 'Pop-up results to excel !'
+-------------------------------------------------
 
-* '.backup' and '.restore' functions are accessible via menu
+* 'backup' and 'restore' functions are accessible via menu (for python >=3.7)
 
-* can run in an enviromment without DISPLAY
+* running script and displaying output in temporary files is available via icons
 
+* supports running in an environment with no DISPLAY
 
 
 2021-08-09b : v0.11.1 'Script me more!'
