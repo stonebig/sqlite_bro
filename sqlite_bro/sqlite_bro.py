@@ -40,8 +40,8 @@ class App:
 
     def __init__(self, use_gui=True):
         """create a tkk graphic interface with a main window tk_win"""
-        self.__version__ = "0.12.1"
-        self._title = "of 2021-08-15a : 'Pop-up results to .excel !'"
+        self.__version__ = "0.12.2"
+        self._title = "of 2022-02-04a : 'Filling the blanks !'"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.initialdir = "."
@@ -1619,7 +1619,10 @@ def guess_sql_creation(table_name, separ, decim, header, data, quoter='"'):
     if header:
         # de-duplicate column names, if needed by pastixing with '_'+number
         for i in range(len(r)):
-            if r[i] in r[:i]:
+
+           if r[i] == "":  # 2022-02-04a replace empty column title per usual default
+
+                r[i] = "c_" + ("000" + str(i))[-3:]            if r[i] in r[:i]:
                 j = 1
                 while r[i] + "_" + str(j) in r[:i] + r[i + 1 :]:
                     j += 1

@@ -1,6 +1,12 @@
 Changelog
 =========
 
+2022-02-04a : v0.12.2 'Filling the blanks !'
+--------------------------------------------
+
+* empty columns names are always replaced per the default 'c_nnn' convention
+
+
 2021-08-15a : v0.12.1 'Pop-up results to excel !'
 -------------------------------------------------
 
