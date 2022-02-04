@@ -1621,8 +1621,9 @@ def guess_sql_creation(table_name, separ, decim, header, data, quoter='"'):
         for i in range(len(r)):
 
            if r[i] == "":  # 2022-02-04a replace empty column title per usual default
+                r[i] = "c_" + ("000" + str(i))[-3:]
 
-                r[i] = "c_" + ("000" + str(i))[-3:]            if r[i] in r[:i]:
+           if r[i] in r[:i]:
                 j = 1
                 while r[i] + "_" + str(j) in r[:i] + r[i + 1 :]:
                     j += 1
