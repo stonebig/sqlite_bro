@@ -1,0 +1,36 @@
+[build-system]  # flit_core seems the step after 'setuptools','wheel','build','twine' (see https://github.com/pypa/build/issues/394)
+requires = ["flit_core"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "sqlite_bro"
+authors = [
+    {name = "stonebig"},
+]
+dependencies = []
+requires-python = ">=3.3"
+readme = "README.rst"
+license = {file = "LICENSE"}
+classifiers=[
+    'Intended Audience :: Education',
+    'License :: OSI Approved :: MIT License',
+    'Operating System :: MacOS',
+    'Operating System :: Microsoft :: Windows',
+    'Operating System :: OS Independent',
+    'Operating System :: POSIX',
+    'Operating System :: Unix',
+    'Programming Language :: Python :: 3',
+    'Development Status :: 5 - Production/Stable',
+    'Topic :: Scientific/Engineering',
+    'Topic :: Software Development :: Widget Sets',
+]
+dynamic = ["version",]
+description="a graphic SQLite Client in 1 Python file"
+keywords = ["sqlite", "gui", "ttk", "sql"]
+
+[project.urls]
+Documentation = "https://github.com/stonebig/sqlite_bro/README.rst"
+Source = "https://github.com/stonebig/sqlite_bro"
+
+[project.scripts]
+sqlite_bro = "sqlite_bro.sqlite_bro:_main"

@@ -1,6 +1,12 @@
 Changelog
 =========
 
+2024-05-11b : v0.13.1 'Setup me down !'
+---------------------------------------
+
+* see https://blog.ganssle.io/articles/2021/10/setup-py-deprecated.html for details
+
+
 2024-05-11a : v0.13.0 'PEP 667 me up !'
 ---------------------------------------
 

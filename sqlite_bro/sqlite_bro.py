@@ -42,8 +42,8 @@ class App:
 
     def __init__(self, use_gui=True):
         """create a tkk graphic interface with a main window tk_win"""
-        self.__version__ = "0.13.0"
-        self._title = "of 2024-05-11a : 'PEP 667 me up !'"
+        self.__version__ = "0.13.1"
+        self._title = "of 2024-05-11b : 'Setup me down !'"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.initialdir = "."
