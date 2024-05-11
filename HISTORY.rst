@@ -4,7 +4,7 @@ Changelog
 2024-05-11a : v0.13.0 'PEP 667 me up !'
 ---------------------------------------
 
-* starting Python-3.13, PEP 667 forces us to us a specific dictionnary pydef_locals instead of locals()
+* starting Python-3.13, PEP 667 forces us to use a specific dictionnary pydef_locals instead of locals()
 
 
 2022-02-04a : v0.12.2 'Filling the blanks !'
