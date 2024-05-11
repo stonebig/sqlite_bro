@@ -34,14 +34,16 @@ except ImportError:  # or we are still Python2.7
 
 tipwindow = None
 
+# starting Python-3.13, PEP 667 forces us to us a specific dictionnary pydef_locals instead of locals()
+pydef_locals ={} 
 
 class App:
     """the GUI graphic application"""
 
     def __init__(self, use_gui=True):
         """create a tkk graphic interface with a main window tk_win"""
-        self.__version__ = "0.12.2"
-        self._title = "of 2022-02-04a : 'Filling the blanks !'"
+        self.__version__ = "0.13.0"
+        self._title = "of 2024-05-11a : 'PEP 667 me up !'"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.initialdir = "."
@@ -1942,19 +1944,20 @@ class Baresql:
 
         instruction = sql.strip("; \t\n\r")
         # create Python function in Python
-        exec(instruction[2:], globals(), locals())
+        exec(instruction[2:], globals(), pydef_locals)
         # add Python function in SQLite
         instr_header = re.findall(r"\w+", instruction[: (instruction + ")").find(")")])
         instr_name = instr_header[1]
         instr_parms = len(instr_header) - 2
+        instr_pointer=eval(instr_name, globals(), pydef_locals)
+        self.conn.create_function(instr_name, instr_parms, instr_pointer)
         instr_add = "self.conn.create_function('%s', %s, %s)" % (
             instr_name,
             instr_parms,
             instr_name,
         )
-        exec(instr_add, globals(), locals())
         # housekeeping definition of pydef in a dictionnary
-        the_help = dict(globals(), **locals())[instr_name].__doc__
+        the_help = pydef_locals[instr_name].__doc__
         self.conn_def[instr_name] = {
             "parameters": instr_parms,
             "inst": instr_add,
