@@ -8,7 +8,9 @@ any basic python installation.
 Features
 --------
 
-* Tabular browsing of a SQLite database 
+* Tabular browsing of a SQLite database
+
+* Optional DuckDB engine : open or create a '.duckdb' file (needs 'pip install duckdb')
 
 * Import/Export of .csv files with auto-detection
 

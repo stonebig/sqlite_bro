@@ -8,6 +8,15 @@ except ImportError:
     pass  # Python<3.2
 
 import sqlite3 as sqlite
+
+try:  # optional second engine : DuckDB (pip install duckdb)
+    import duckdb
+
+    db_errors = (sqlite.Error, duckdb.Error)
+except ImportError:
+    duckdb = None
+    db_errors = (sqlite.Error,)
+
 import sys
 import os
 import locale
@@ -42,8 +51,8 @@ class App:
 
     def __init__(self, use_gui=True):
         """create a tkk graphic interface with a main window tk_win"""
-        self.__version__ = "0.13.1"
-        self._title = "of 2024-05-11b : 'Setup me down !'"
+        self.__version__ = "0.14.0"
+        self._title = "of 2026-07-12 : 'Quack me up !'"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.initialdir = "."
@@ -131,6 +140,11 @@ class App:
         self.menu.add_command(
             label="New In-Memory Database", command=lambda: self.new_db(":memory:")
         )
+        if duckdb is not None:
+            self.menu.add_command(
+                label="New In-Memory DuckDB Database",
+                command=lambda: self.new_db(":memory:", engine="duckdb"),
+            )
         self.menu.add_command(label="Open Database ...", command=self.open_db)
         self.menu.add_command(
             label="Open Database ...(legacy auto-commit)",
@@ -212,14 +226,19 @@ class App:
         if os.path.isfile(proposal):
             self.initialdir = os.path.dirname(proposal)
 
-    def new_db(self, filename=""):
-        """create a new database"""
+    def new_db(self, filename="", engine=None):
+        """create a new database (engine guessed from extension if not given)"""
         if filename == "":
             filename = filedialog.asksaveasfilename(
                 initialdir=self.initialdir,
                 defaultextension=".db",
                 title="Define a new database name and location",
-                filetypes=[("default", "*.db"), ("other", "*.db*"), ("all", "*.*")],
+                filetypes=[
+                    ("default", "*.db"),
+                    ("duckdb", "*.duckdb"),
+                    ("other", "*.db*"),
+                    ("all", "*.*"),
+                ],
             )
         if filename != "":
             self.database_file = filename
@@ -231,21 +250,26 @@ class App:
                     title="Destroying",
                 ):
                     os.remove(filename)
-            self.conn = Baresql(self.database_file)
+            self.conn = Baresql(self.database_file, engine=engine)
             self.actualize_db()
 
-    def open_db(self, filename="", isolation_level=None):
-        """open an existing database"""
+    def open_db(self, filename="", isolation_level=None, engine=None):
+        """open an existing database (engine guessed from extension if not given)"""
         if filename == "":
             filename = filedialog.askopenfilename(
                 initialdir=self.initialdir,
                 defaultextension=".db",
-                filetypes=[("default", "*.db"), ("other", "*.db*"), ("all", "*.*")],
+                filetypes=[
+                    ("default", "*.db"),
+                    ("duckdb", "*.duckdb"),
+                    ("other", "*.db*"),
+                    ("all", "*.*"),
+                ],
             )
         if filename != "":
             self.set_initialdir(filename)
             self.database_file = filename
-            self.conn = Baresql(self.database_file)
+            self.conn = Baresql(self.database_file, engine=engine)
             self.actualize_db()
 
     def backup_db(self, filename="", isolation_level=None):
@@ -266,9 +290,7 @@ class App:
                     title="Destroying",
                 ):
                     os.remove(filename)
-                    db_to = sqlite.connect(filename)
-                    self.conn.conn.backup(db_to)
-                    db_to.close()
+                    self.backup_main_to(filename)
                     self.actualize_db()
 
     def restore_db(self, filename="", isolation_level=None):
@@ -280,10 +302,40 @@ class App:
                 filetypes=[("default", "*.db"), ("other", "*.db*"), ("all", "*.*")],
             )
         if filename != "":
+            self.restore_main_from(filename)
+            self.actualize_db()
+
+    def backup_main_to(self, filename):
+        """backup the current 'main' database to filename, per engine"""
+        if self.conn.engine == "duckdb":
+            current = self.conn.execute("select current_database()").fetchall()[0][0]
+            self.conn.execute(
+                "ATTACH '%s' AS bro_backup" % filename.replace("'", "''")
+            )
+            self.conn.execute(
+                'COPY FROM DATABASE "%s" TO bro_backup' % current.replace('"', '""')
+            )
+            self.conn.execute("DETACH bro_backup")
+        else:
+            db_to = sqlite.connect(filename)
+            self.conn.conn.backup(db_to)
+            db_to.close()
+
+    def restore_main_from(self, filename):
+        """restore the database in filename into current 'main', per engine"""
+        if self.conn.engine == "duckdb":
+            current = self.conn.execute("select current_database()").fetchall()[0][0]
+            self.conn.execute(
+                "ATTACH '%s' AS bro_restore (READ_ONLY)" % filename.replace("'", "''")
+            )
+            self.conn.execute(
+                'COPY FROM DATABASE bro_restore TO "%s"' % current.replace('"', '""')
+            )
+            self.conn.execute("DETACH bro_restore")
+        else:
             db_from = sqlite.connect(filename)
             db_from.backup(self.conn.conn)
             db_from.close
-            self.actualize_db()
 
     def load_script(self):
         """load a script file, ask validation of detected Python code"""
@@ -367,7 +419,12 @@ class App:
                 initialdir=self.initialdir,
                 defaultextension=".db",
                 title="Choose a database to attach ",
-                filetypes=[("default", "*.db"), ("other", "*.db*"), ("all", "*.*")],
+                filetypes=[
+                    ("default", "*.db"),
+                    ("duckdb", "*.duckdb"),
+                    ("other", "*.db*"),
+                    ("all", "*.*"),
+                ],
             )
         if attach_as == "":
             attach = os.path.basename(filename).split(".")[0]
@@ -379,7 +436,8 @@ class App:
             attach, indice = att + "_" + str(indice), indice + 1
         if filename != "":
             self.set_initialdir(filename)
-            attach_order = "ATTACH DATABASE '%s' as '%s' " % (filename, attach)
+            # double-quoted alias : accepted by both SQLite and DuckDB
+            attach_order = 'ATTACH DATABASE \'%s\' as "%s" ' % (filename, attach)
             self.conn.execute(attach_order)
             self.actualize_db()
 
@@ -964,7 +1022,8 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
         a_jouer = self.conn.get_sqlsplit(instructions, remove_comments=False)
         # must read :https://www.youtube.com/watch?v=09tM18_st4I#t=1751
         # stackoverflow.com/questions/15856976/transactions-with-python-sqlite3
-        isolation = self.conn.conn.isolation_level
+        # DuckDB connections have no isolation_level attribute
+        isolation = getattr(self.conn.conn, "isolation_level", None)
         counter = 0
         shell_list = ["", ""]
         if isolation == "":  # Sqlite3 and dump.py default don't match
@@ -1166,17 +1225,13 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                         filename = shell_list[1]
                         if (filename + "z")[0] == "~":
                             filename = os.path.join(self.home, filename[1:])
-                        db_from = sqlite.connect(filename)
-                        db_from.backup(self.conn.conn)
-                        db_from.close
+                        self.restore_main_from(filename)
                         self.actualize_db()
                     if shell_list[0] == ".backup" and len(shell_list) >= 2:
                         filename = shell_list[1]
                         if (filename + "z")[0] == "~":
                             filename = os.path.join(self.home, filename[1:])
-                        db_to = sqlite.connect(filename)
-                        self.conn.conn.backup(db_to)
-                        db_to.close()
+                        self.backup_main_to(filename)
                     if shell_list[0] == ".shell" and len(shell_list) >= 2:
                         os.system(instru[len(".print") + 1 :] + "\n")
 
@@ -1241,7 +1296,7 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                                 )
                                 if len(rows) > limit:
                                     log.write("%s more..." % len((rows) - limit))
-                except sqlite.Error as msg:  # OperationalError
+                except db_errors as msg:  # OperationalError
                     self.n.add_treeview(
                         tab_tk_id, ("Error !",), [(msg,)], "Error !", first_line
                     )
@@ -1250,7 +1305,7 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                     sql_error = True
                     break
 
-        if self.conn.conn.isolation_level != isolation:
+        if getattr(self.conn.conn, "isolation_level", None) != isolation:
             # if we're in 'backward' compatible mode (automatic commit)
             try:
                 if self.conn.conn.in_transaction:  # python 3.2
@@ -1633,7 +1688,10 @@ def guess_sql_creation(table_name, separ, decim, header, data, quoter='"'):
         head = ",\n".join([('"%s" %s' % (r[i], typ[i])) for i in range(len(r))])
         sql_crea = 'CREATE TABLE "%s" (%s);' % (table_name, head)
     else:
-        head = ",".join(["c_" + ("000" + str(i))[-3:] for i in range(len(r))])
+        # typed columns : mandatory for DuckDB, harmless for SQLite
+        head = ",".join(
+            ["c_" + ("000" + str(i))[-3:] + " " + typ[i] for i in range(len(r))]
+        )
         sql_crea = 'CREATE TABLE "%s" (%s);' % (table_name, head)
     return sql_crea, typ, head
 
@@ -1862,6 +1920,49 @@ def get_leaves(conn, category, attached_db="", tbl=""):
 
     if category == "pydef":  # pydef request is not sql, answer is direct
         Tables = [[k, k, v["pydef"], ""] for k, v in conn.conn_def.items()]
+    elif getattr(conn, "engine", "sqlite") == "duckdb":
+        # DuckDB : sqlite_master only exists for the current database,
+        # so rely on the duckdb_xxx() catalog functions instead
+        dbf = (
+            "current_database()"
+            if attached_db in ("", "main", "temp")
+            else "'%s'" % attached_db.replace("'", "''")
+        )
+        if category == "attached_databases":
+            sql = """select database_oid, database_name, coalesce(path, '')
+                  from duckdb_databases()
+                  where not internal and database_name != current_database()"""
+            for c in conn.execute(sql).fetchall():
+                instruct = "ATTACH DATABASE %s as %s" % (f(c[2]), f(c[1]))
+                Tables.append([c[0], c[1], instruct, ""])
+        elif category == "fields":
+            qualified = (
+                tbl
+                if attached_db in ("", "main")
+                else "%s.%s" % (attached_db, tbl)
+            )
+            resu = conn.execute(
+                "PRAGMA table_info('%s')" % qualified.replace("'", "''")
+            ).fetchall()
+            Tables = [[c[1], c[1], c[2], ""] for c in resu]
+        elif category in ("table", "view", "index"):
+            if category == "table":
+                sql = """select 'table:' || table_name, table_name,
+                      coalesce(sql, '--auto'), 'fields'
+                      from duckdb_tables() where not internal
+                      and database_name = {0} order by table_name"""
+            elif category == "view":
+                sql = """select 'view:' || view_name, view_name,
+                      coalesce(sql, '--auto'), 'fields'
+                      from duckdb_views() where not internal
+                      and database_name = {0} order by view_name"""
+            else:
+                sql = """select 'index:' || index_name, index_name,
+                      coalesce(sql, '--auto'), ''
+                      from duckdb_indexes()
+                      where database_name = {0} order by index_name"""
+            Tables = list(conn.execute(sql.format(dbf)).fetchall())
+        # 'trigger' and 'master_table' : nothing to show for DuckDB
     elif category == "attached_databases":
         # get all attached database, but not the first one ('main')
         resu = list((conn.execute("PRAGMA database_list").fetchall()))[1:]
@@ -1893,19 +1994,40 @@ class Baresql:
     """a small wrapper around sqlite3 module"""
 
     def __init__(
-        self, connection="", keep_log=False, cte_inline=True, isolation_level=None
+        self,
+        connection="",
+        keep_log=False,
+        cte_inline=True,
+        isolation_level=None,
+        engine=None,
     ):
         self.dbname = connection.replace(":///", "://").replace("sqlite://", "")
-        self.conn = sqlite.connect(self.dbname, detect_types=sqlite.PARSE_DECLTYPES)
+        if engine is None:  # guess the engine from the file extension
+            engine = (
+                "duckdb"
+                if self.dbname.lower().endswith((".duckdb", ".ddb"))
+                else "sqlite"
+            )
+        self.engine = engine
+        if self.engine == "duckdb":
+            if duckdb is None:
+                raise ImportError(
+                    "DuckDB engine requested, but 'duckdb' module is not installed"
+                )
+            self.conn = duckdb.connect(self.dbname)
+        else:
+            self.conn = sqlite.connect(
+                self.dbname, detect_types=sqlite.PARSE_DECLTYPES
+            )
+            self.conn.isolation_level = isolation_level  # commit experience
         # pydef and logging infrastructure
         self.conn_def = {}
         self.do_log = keep_log
         self.log = []
-        self.conn.isolation_level = isolation_level  # commit experience
 
     def close(self):
         """close database and clear dictionnary of registered 'pydef'"""
-        self.conn.close
+        self.conn.close()
         self.conn_def = {}
 
     def iterdump(self):
@@ -1915,6 +2037,42 @@ class Baresql:
         # add the Python functions pydef
         for k in self.conn_def.values():
             yield (k["pydef"] + ";\n")
+        if self.engine == "duckdb":
+            # DuckDB has no iterdump : rebuild one from catalog functions
+            yield ("BEGIN TRANSACTION;")
+            tables = self.conn.execute(
+                """select table_name, sql from duckdb_tables()
+                where not internal and database_name = current_database()
+                order by table_name"""
+            ).fetchall()
+            for table_name, sql in tables:
+                yield (sql if sql.rstrip().endswith(";") else sql + ";")
+                quoted = table_name.replace('"', '""')
+                for row in self.conn.execute(
+                    'SELECT * FROM "%s"' % quoted
+                ).fetchall():
+                    vals = ",".join(
+                        "NULL"
+                        if v is None
+                        else str(v)
+                        if isinstance(v, (int, float))
+                        else "'%s'" % str(v).replace("'", "''")
+                        for v in row
+                    )
+                    yield ('INSERT INTO "%s" VALUES(%s);' % (quoted, vals))
+            for (sql,) in self.conn.execute(
+                """select sql from duckdb_views()
+                where not internal and database_name = current_database()"""
+            ).fetchall():
+                yield (sql if sql.rstrip().endswith(";") else sql + ";")
+            for (sql,) in self.conn.execute(
+                """select sql from duckdb_indexes()
+                where database_name = current_database()"""
+            ).fetchall():
+                if sql:
+                    yield (sql if sql.rstrip().endswith(";") else sql + ";")
+            yield ("COMMIT;")
+            return
         # disable Foreign Constraints at Load
         yield ("PRAGMA foreign_keys = OFF; /*if SQlite */;")
         yield ("\n/* SET foreign_key_checks = 0;/*if Mysql*/;")
@@ -1950,7 +2108,17 @@ class Baresql:
         instr_name = instr_header[1]
         instr_parms = len(instr_header) - 2
         instr_pointer=eval(instr_name, globals(), pydef_locals)
-        self.conn.create_function(instr_name, instr_parms, instr_pointer)
+        if self.engine == "duckdb":
+            # DuckDB needs explicit types (and numpy installed) : use VARCHAR
+            try:
+                self.conn.remove_function(instr_name)  # allow re-definition
+            except Exception:
+                pass
+            self.conn.create_function(
+                instr_name, instr_pointer, ["VARCHAR"] * instr_parms, "VARCHAR"
+            )
+        else:
+            self.conn.create_function(instr_name, instr_parms, instr_pointer)
         instr_add = "self.conn.create_function('%s', %s, %s)" % (
             instr_name,
             instr_parms,
@@ -2102,8 +2270,11 @@ class Baresql:
             curs.execute("begin transaction")
         except:
             pass
-        # check if table exists
-        here = curs.execute('PRAGMA table_info("%s")' % table_name).fetchall()
+        # check if table exists (DuckDB raises where SQLite returns empty)
+        try:
+            here = curs.execute('PRAGMA table_info("%s")' % table_name).fetchall()
+        except db_errors:
+            here = []
         if create_sql and (create_table or len(here) == 0):
             curs.execute('drop TABLE if exists "%s";' % table_name)
             curs.execute(create_sql)
@@ -2117,7 +2288,10 @@ class Baresql:
             next(reader)
         # 2-push records
         curs.executemany(sql, reader)
-        self.conn.commit()
+        if self.engine == "duckdb":
+            curs.commit()  # a DuckDB cursor is a duplicated connection
+        else:
+            self.conn.commit()
 
     def export_writer(
         self,
@@ -2135,8 +2309,21 @@ class Baresql:
         # do nothing if nothing
         if cursor.description is None or len(cursor.description) == 0:
             return -1
-        else:
-            nb_columns = len(cursor.description)
+        if self.engine == "duckdb":
+            # DuckDB gives a description ('Count') even to non-SELECT
+            # statements : export only genuine queries, like SQLite does
+            first_word = ""
+            for line in sql.splitlines():
+                line = line.strip()
+                if line and not line.startswith("--"):
+                    first_word = line.split()[0].lower()
+                    break
+            if first_word not in (
+                "select", "with", "from", "pragma", "show",
+                "describe", "values", "call", "summarize", "table",
+            ):
+                return -1
+        nb_columns = len(cursor.description)
         # with PyPy, the "with io.open" for is more than necessary
         if sys.version_info[0] != 2:  # python3
             write_mode = "w" if initialize else "a"  # Write or Append
@@ -2170,6 +2357,7 @@ class Baresql:
 
 def _main():
     welcome_text = """-- SQLite Memo (Demo = click on green "->" and "@" icons)
+-- (tip : open or create a '.duckdb' file to use the DuckDB engine instead)
 \n-- to CREATE a table 'items' and a table 'parts' :
 DROP TABLE IF EXISTS item; DROP TABLE IF EXISTS part;
 CREATE TABLE item (ItemNo, Description,Kg  , PRIMARY KEY (ItemNo));
@@ -2263,7 +2451,8 @@ CREATE TABLE toto.new_item as select * from "main"."item";
             "--database",
             default=":memory:",
             type=str,
-            help="specify initial Database if not ':memory:'",
+            help="specify initial Database if not ':memory:'"
+            " (a .duckdb/.ddb extension selects the DuckDB engine)",
         )
         parser.add_argument(
             "-sc", "--scripts", type=str, help="qive a list of initial scripts"
