@@ -86,23 +86,33 @@ def test_Pydef():
     "python function embedded in sql, on the duckdb engine (needs numpy)"
     pytest.importorskip("numpy")
     app.new_db(":memory:", engine="duckdb")
+    app.default_separator, app.default_header = ",", True  # reset prior state
     with tempfile.TemporaryDirectory(prefix='.tmp') as tmp_dir:
         tmp_file = str(pathlib.PurePath(tmp_dir, 'sqlite_bro_test_Pydef.tmp'))
         welcome_text = """
 pydef py_dup(a):
     "duplicate a string"
     return a + a;
+pydef py_fib(n):
+   "fibonacci, annotation-less, called with an int literal"
+   fib = lambda n: n if n < 2 else fib(n-1) + fib(n-2)
+   return("%%s" %% fib(n*1));
+pydef py_fib_t(n: int) -> int:
+    "fibonacci, type-annotated : registered natively"
+    fib = lambda n: n if n < 2 else fib(n-1) + fib(n-2)
+    return fib(n);
 .once %s
-select py_dup('ab') as dup;""" % tmp_file
+select py_dup('ab') as dup, py_fib(6) as fib, py_fib_t(7) as fib_t;""" % tmp_file
         app.n.new_query_tab("Welcome", welcome_text)
         app.run_tab()
-        app.close_db
+        app.run_tab()  # re-run : pydef re-registration must not fail
 
         file_encoding = sqlite_bro.guess_encoding(tmp_file)[0]
         with io.open(tmp_file, mode='rt', encoding=file_encoding) as f:
             result = f.readlines()
-        assert result[0] == "dup\n"
-        assert result[1] == "abab\n"
+        assert result[0] == "dup,fib,fib_t\n"
+        assert result[1] == "abab,8,13\n"
+        app.close_db
 
 
 def test_Dump():

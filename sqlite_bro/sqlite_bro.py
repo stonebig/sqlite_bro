@@ -1990,6 +1990,32 @@ def get_leaves(conn, category, attached_db="", tbl=""):
     return Tables
 
 
+def duck_type_adapt(fn, nargs):
+    """wrap an annotation-less pydef for DuckDB : mimic SQLite dynamic typing
+    (arguments arrive as VARCHAR, numeric-looking ones are converted back)"""
+
+    def convert_call(args):
+        converted = []
+        for arg in args:
+            if isinstance(arg, str):
+                try:
+                    arg = int(arg)
+                except ValueError:
+                    try:
+                        arg = float(arg)
+                    except ValueError:
+                        pass
+            converted.append(arg)
+        result = fn(*converted)
+        return result if result is None else str(result)
+
+    if nargs == 0:
+        return lambda: convert_call(())
+    # build a wrapper of the exact arity DuckDB expects (*args confuses it)
+    argnames = ",".join("a%s" % i for i in range(nargs))
+    return eval("lambda %s: _c((%s,))" % (argnames, argnames), {"_c": convert_call})
+
+
 class Baresql:
     """a small wrapper around sqlite3 module"""
 
@@ -2109,14 +2135,35 @@ class Baresql:
         instr_parms = len(instr_header) - 2
         instr_pointer=eval(instr_name, globals(), pydef_locals)
         if self.engine == "duckdb":
-            # DuckDB needs explicit types (and numpy installed) : use VARCHAR
+            # DuckDB needs typed functions (and numpy installed) :
+            # 1- clean up previous definitions of the same name
+            for cleanup in (
+                lambda: self.conn.remove_function(instr_name),
+                lambda: self.conn.remove_function("_bro_" + instr_name),
+                lambda: self.conn.execute('DROP MACRO IF EXISTS "%s"' % instr_name),
+            ):
+                try:
+                    cleanup()
+                except Exception:
+                    pass
+            # 2- a fully type-annotated pydef registers natively ...
             try:
-                self.conn.remove_function(instr_name)  # allow re-definition
+                self.conn.create_function(instr_name, instr_pointer)
             except Exception:
-                pass
-            self.conn.create_function(
-                instr_name, instr_pointer, ["VARCHAR"] * instr_parms, "VARCHAR"
-            )
+                # ... otherwise register a VARCHAR implementation behind a
+                # macro that casts any argument, to mimic SQLite duck-typing
+                self.conn.create_function(
+                    "_bro_" + instr_name,
+                    duck_type_adapt(instr_pointer, instr_parms),
+                    ["VARCHAR"] * instr_parms,
+                    "VARCHAR",
+                )
+                parms = ["p%s" % i for i in range(instr_parms)]
+                casts = ["CAST(p%s AS VARCHAR)" % i for i in range(instr_parms)]
+                self.conn.execute(
+                    'CREATE OR REPLACE MACRO "%s"(%s) AS "_bro_%s"(%s)'
+                    % (instr_name, ",".join(parms), instr_name, ",".join(casts))
+                )
         else:
             self.conn.create_function(instr_name, instr_parms, instr_pointer)
         instr_add = "self.conn.create_function('%s', %s, %s)" % (
