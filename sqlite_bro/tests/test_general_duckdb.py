@@ -115,6 +115,23 @@ select py_dup('ab') as dup, py_fib(6) as fib, py_fib_t(7) as fib_t;""" % tmp_fil
         app.close_db
 
 
+def test_WelcomeDemo():
+    "the DuckDB welcome demo must run error-free (sql + pydef part)"
+    pytest.importorskip("numpy")
+    app.new_db(":memory:", engine="duckdb")
+    app.output_mode, app.once_mode = False, False
+    # keep only the sql + pydef part : the '.' commands part writes to ~
+    demo = sqlite_bro.WELCOME_DUCKDB.split(".headers on")[0]
+    # a sentinel : it is only reached if no previous instruction errored
+    demo += "\ncreate table demo_ok as select 1 as ok;"
+    app.n.new_query_tab("DuckDB Memo", demo)
+    app.run_tab()
+    assert app.conn.execute("select ok from demo_ok").fetchall() == [(1,)]
+    assert app.conn.execute("select py_fib(6)").fetchall() == [('8',)]
+    assert app.conn.execute("select py_fib_typed(7)").fetchall() == [(13,)]
+    app.close_db
+
+
 def test_Dump():
     "iterdump must produce a replayable sql script"
     app.new_db(":memory:", engine="duckdb")

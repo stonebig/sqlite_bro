@@ -44,7 +44,66 @@ except ImportError:  # or we are still Python2.7
 tipwindow = None
 
 # starting Python-3.13, PEP 667 forces us to us a specific dictionnary pydef_locals instead of locals()
-pydef_locals ={} 
+pydef_locals ={}
+
+WELCOME_DUCKDB = """-- DuckDB Memo (Demo = click on green "->" icon)
+-- (this database uses the DuckDB engine : SQL is stricter than SQLite)
+\n-- to CREATE tables : column types are mandatory
+DROP TABLE IF EXISTS item; DROP TABLE IF EXISTS part;
+CREATE TABLE item (ItemNo TEXT, Description TEXT, Kg REAL, PRIMARY KEY (ItemNo));
+CREATE TABLE part(ParentNo TEXT, ChildNo TEXT, Description TEXT, Qty_per REAL);
+\n-- to CREATE an index :
+DROP INDEX IF EXISTS parts_id1;
+CREATE INDEX parts_id1 ON part(ParentNo, ChildNo);
+\n-- to CREATE a view 'v1':
+DROP VIEW IF EXISTS v1;
+CREATE VIEW v1 as select * from item inner join part as p ON ItemNo=p.ParentNo;
+\n-- to INSERT datas : string literals use single quotes
+INSERT INTO item values('T','Ford',1000);
+INSERT INTO item select 'A','Merced',1250 union all select 'W','Wheel',9 ;
+INSERT INTO part select ItemNo,'W','needed',Kg/250 from item where Kg>250;
+\n-- to CREATE a Python embedded function (needs numpy installed),
+-- enclose it by "pydef" and ";" :
+pydef py_hello():
+    "hello world"
+    return ("Hello, World !");
+pydef py_fib(n):
+   "fibonacci : example with function call (may only be internal) "
+   fib = lambda n: n if n < 2 else fib(n-1) + fib(n-2)
+   return("%s" % fib(n*1));
+pydef py_fib_typed(n: int) -> int:
+    "type-annotated pydef : registered natively (faster, typed) "
+    fib = lambda n: n if n < 2 else fib(n-1) + fib(n-2)
+    return fib(n);
+\n-- to USE a python embedded function :
+select py_hello(), py_fib(6) as fibonacci, py_fib_typed(7) as fib_typed,
+       version() as duckdb_version;
+\n-- some DuckDB goodies :
+DESCRIBE item;
+SUMMARIZE item;
+select * from duckdb_tables();
+\n-- to use COMMIT and ROLLBACK (DuckDB does not support SAVEPOINT) :
+BEGIN TRANSACTION;
+UPDATE item SET Kg = Kg + 1;
+COMMIT;
+BEGIN TRANSACTION;
+UPDATE item SET Kg = 0;
+select Kg, Description from Item;
+ROLLBACK;
+select Kg, Description from Item;
+\n-- '.' commands understood (same as in SQLite mode, see sqlite demo) :
+.headers on
+.separator ;
+.once --bom  '~this_file_of result.txt'
+select ItemNo, Description from item order by ItemNo desc;
+.import '~this_file_of result.txt' in_this_table
+.cd ~
+ATTACH 'test.duckdb' as toto;
+DROP TABLE IF EXISTS toto.new_item;
+CREATE TABLE toto.new_item as select * from "main"."item";
+.dump
+"""
+
 
 class App:
     """the GUI graphic application"""
@@ -115,6 +174,9 @@ class App:
         self.default_header = True
         self.default_separator = ","
         self.current_directory = os.getcwd()
+
+        # show the DuckDB welcome demo only once per session
+        self.duckdb_demo_shown = False
 
         # Initiate Output State
         self.once_mode = False
@@ -251,6 +313,7 @@ class App:
                 ):
                     os.remove(filename)
             self.conn = Baresql(self.database_file, engine=engine)
+            self.show_duckdb_demo()
             self.actualize_db()
 
     def open_db(self, filename="", isolation_level=None, engine=None):
@@ -270,7 +333,18 @@ class App:
             self.set_initialdir(filename)
             self.database_file = filename
             self.conn = Baresql(self.database_file, engine=engine)
+            self.show_duckdb_demo()
             self.actualize_db()
+
+    def show_duckdb_demo(self):
+        """open the DuckDB welcome demo tab, once, when DuckDB is first used"""
+        if (
+            self.use_gui
+            and self.conn.engine == "duckdb"
+            and not self.duckdb_demo_shown
+        ):
+            self.duckdb_demo_shown = True
+            self.n.new_query_tab("DuckDB Memo", WELCOME_DUCKDB)
 
     def backup_db(self, filename="", isolation_level=None):
         """Backup the current database"""
@@ -2526,7 +2600,7 @@ CREATE TABLE toto.new_item as select * from "main"."item";
                         app.n.new_query_tab("Welcome", welcome_text)
                         if not args.wait:
                             app.run_tab()
-        else:
+        elif app.conn.engine != "duckdb":  # duckdb welcome tab auto-shows
             app.n.new_query_tab("Welcome", welcome_text)
         if args.quiet:
             app.close_db
