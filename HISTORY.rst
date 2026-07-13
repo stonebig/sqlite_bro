@@ -1,6 +1,24 @@
 Changelog
 =========
 
+2026-07-13a : v0.14.0 'Quack me up !'
+-------------------------------------
+
+* optional DuckDB engine : create or open a '.duckdb' database (needs 'pip install duckdb'), with its own DuckDB-flavored welcome demo
+
+* pydef embedded Python functions work on the DuckDB engine (type-annotated ones are registered natively)
+
+* script runs now feed a single 'Logs' result tab (N°, Time, Result, Status, Instruction) : DDL/DML/pydef/dot-commands no longer spawn one result tab each, and silent statements become visible
+
+* data grids keep their own result tabs, titled 'Qry_<n>' where <n> matches the record N° in the 'Logs' tab
+
+* 'Logs' and 'Dump' result tabs are pinned on the left of the results notebook
+
+* window title and database tree indicate the engine in use (SQLite or DuckDB)
+
+* fix : refreshing the database tree no longer crashes on views repeating a column name (e.g. 'select *' over a join)
+
+
 2024-05-11b : v0.13.1 'Setup me down !'
 ---------------------------------------
 

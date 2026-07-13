@@ -25,8 +25,8 @@ classifiers=[
     'Topic :: Software Development :: Widget Sets',
 ]
 dynamic = ["version",]
-description="a graphic SQLite Client in 1 Python file"
-keywords = ["sqlite", "gui", "ttk", "sql"]
+description="a graphic SQLite and DuckDB Client in 1 Python file"
+keywords = ["sqlite", "duckdb", "gui", "ttk", "sql"]
 
 [project.urls]
 Documentation = "https://github.com/stonebig/sqlite_bro/README.rst"
