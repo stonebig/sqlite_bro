@@ -8,7 +8,7 @@ databases with any basic python installation.
 Features
 --------
 
-* Tabular browsing of a SQLite database
+* Tabular browsing of a SQLite or DuckDB database
 
 * Optional DuckDB engine : open or create a '.duckdb' file (needs 'pip install duckdb')
 
