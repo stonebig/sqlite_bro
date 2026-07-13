@@ -533,10 +533,22 @@ class App:
         # delete existing tree entries before re-creating them
         for node in self.db_tree.get_children():
             self.db_tree.delete(node)
-        # create top node
+        # create top node, showing the engine driving the main database
+        engine_label = (
+            "DuckDB" if getattr(self.conn, "engine", "sqlite") == "duckdb"
+            else "SQLite"
+        )
         dbtext = os.path.basename(self.database_file)
+        self.tk_win.title(
+            "A graphic SQLite Client in 1 Python file (%s) - %s %s"
+            % (self.__version__, engine_label, self.database_file)
+        )
         id0 = self.db_tree.insert(
-            "", 0, "Database", text="main (%s)" % dbtext, values=(dbtext, "")
+            "",
+            0,
+            "Database",
+            text="main (%s %s)" % (engine_label, dbtext),
+            values=(dbtext, ""),
         )
         # add Database Objects, by Category
         for categ in ["master_table", "table", "view", "trigger", "index", "pydef"]:
@@ -1104,6 +1116,15 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
             self.conn.conn.isolation_level = None  # right behavior
         cu = self.conn.conn.cursor()
         sql_error = False
+        log_rows = []  # one line per instruction : the "Logs" tab of the run
+        grid_count = 0  # number of data grids ("Qry N°x" tabs) displayed
+
+        def add_log(result, status, first_line):
+            """record one instruction outcome for the "Logs" tab"""
+            timing = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            log_rows.append(
+                (len(log_rows) + 1, timing, result, status, first_line)
+            )
 
         def beurk(r):
             """format data line log"""
@@ -1131,16 +1152,16 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
             first_line = (instru + "\n").splitlines()[0]
             if instru[:5] == "pydef":
                 pydef = self.conn.createpydef(instru)
-                titles = ("Creating embedded python function",)
                 rows = self.conn.conn_def[pydef]["pydef"].splitlines()
                 rows.append(self.conn.conn_def[pydef]["inst"])
-                self.n.add_treeview(tab_tk_id, titles, rows, "Info", pydef)
+                add_log("python function %s created" % pydef, "Ok", first_line)
                 if log is not None:  # write to logFile
                     log.write("\n".join(['("%s")' % r for r in rows]) + "\n")
             elif instru[:1] == ".":  # a shell command !
                 # handle a ".function" here !
                 # import FILE TABLE
                 shell_list = shlex.split(instru, posix=False)  # magic standard library
+                dot_result = ""
                 try:
                     if shell_list[0] == ".cd" and len(shell_list) >= 2:
                         db_file = shell_list[1]
@@ -1242,12 +1263,9 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                             create_table=False,
                             replace=False,
                         )
-                        self.n.add_treeview(
-                            tab_tk_id,
-                            ("table", "file"),
-                            ((guess.table_name, csv_file),),
-                            "Info",
-                            first_line,
+                        dot_result = 'file %s imported in "%s"' % (
+                            csv_file,
+                            guess.table_name,
                         )
                         if log is not None:  # write to logFile
                             log.write(
@@ -1271,6 +1289,7 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                                 ([("%s" % line) for line in self.conn.iterdump()]),
                                 "Dump",
                                 ".dump",
+                                position=0,  # keep the "Dump" tab on the left
                             )
                     if shell_list[0] == ".read" and len(shell_list) >= 2:
                         filename = shell_list[1]
@@ -1308,12 +1327,14 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                         self.backup_main_to(filename)
                     if shell_list[0] == ".shell" and len(shell_list) >= 2:
                         os.system(instru[len(".print") + 1 :] + "\n")
+                    add_log(dot_result, "Ok", first_line)
 
                 except IOError as err:
                     msg = "I/O error: {0}".format(err)
                     self.n.add_treeview(
                         tab_tk_id, ("Error !",), [(msg,)], "Error !", instru
                     )
+                    add_log(msg, "Error", first_line)
                     if not self.use_gui:
                         print("Error !", [msg])
                     if log is not None:  # write to logFile
@@ -1334,13 +1355,9 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                         )
                         if nb_columns > 0:
                             self.once_mode, self.init_output = False, False
-                        if nb_columns > 0:
-                            self.n.add_treeview(
-                                tab_tk_id,
-                                ("qry_to_csv", "file"),
-                                ((instruction, self.output_file),),
-                                "Qry",
-                                # ".once %s" % self.output_file,
+                            add_log(
+                                "query exported to %s" % self.output_file,
+                                "Ok",
                                 first_line,
                             )
                         if self.x_mode and nb_columns > 0:
@@ -1360,9 +1377,49 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                             cur.description is not None and len(cur.description) > 0
                         ):  # pypy needs this test
                             titles = [row_info[0] for row_info in cur.description]
-                            self.n.add_treeview(
-                                tab_tk_id, titles, rows, "Qry", first_line
-                            )
+                            # DuckDB DDL/DML return a synthetic 'Count' or
+                            # 'Success' resultset : log it, don't grid it
+                            # (unless the instruction is a genuine query)
+                            if (
+                                titles in (["Count"], ["Success"])
+                                and len(rows) <= 1
+                                and not instru.lstrip("( \t\n\r")[:9]
+                                .lower()
+                                .startswith(
+                                    (
+                                        "select",
+                                        "with",
+                                        "from",
+                                        "values",
+                                        "table",
+                                        "show",
+                                        "describe",
+                                        "summarize",
+                                        "pragma",
+                                        "call",
+                                        "explain",
+                                    )
+                                )
+                            ):
+                                affected = rows[0][0] if rows else ""
+                                add_log(
+                                    "%s rows affected" % affected
+                                    if titles == ["Count"]
+                                    else "",
+                                    "Ok",
+                                    first_line,
+                                )
+                            else:
+                                add_log("%s rows" % len(rows), "Ok", first_line)
+                                # grid tab title carries the "Logs" record N°
+                                self.n.add_treeview(
+                                    tab_tk_id,
+                                    titles,
+                                    rows,
+                                    "Qry_%s" % len(log_rows),
+                                    first_line,
+                                )
+                                grid_count += 1
                             if log is not None:  # write to logFile
                                 log.write(beurk(titles) + "\n")
                                 log.write(
@@ -1370,14 +1427,36 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                                 )
                                 if len(rows) > limit:
                                     log.write("%s more..." % len((rows) - limit))
+                        else:
+                            rowcount = getattr(cur, "rowcount", -1)
+                            add_log(
+                                "%s rows affected" % rowcount
+                                if rowcount >= 0
+                                else "",
+                                "Ok",
+                                first_line,
+                            )
                 except db_errors as msg:  # OperationalError
                     self.n.add_treeview(
                         tab_tk_id, ("Error !",), [(msg,)], "Error !", first_line
                     )
+                    add_log("%s" % msg, "Error", first_line)
                     if log is not None:  # write to logFile
                         log.write("Error ! %s" % msg)
                     sql_error = True
                     break
+
+        # display the "Logs" tab, unless the run was a single query
+        # already fully rendered by its data grid (classic behavior)
+        if len(log_rows) > 1 or (log_rows and grid_count == 0):
+            self.n.add_treeview(
+                tab_tk_id,
+                ("N°", "Time", "Result", "Status", "Instruction"),
+                log_rows,
+                "Logs",
+                "execution log",
+                position=0,  # keep the permanent "Logs" tab leftmost
+            )
 
         if getattr(self.conn.conn, "isolation_level", None) != isolation:
             # if we're in 'backward' compatible mode (automatic commit)
@@ -1597,7 +1676,9 @@ class NotebookForQueries:
                 xx.grid_forget()
                 xx.destroy()
 
-    def add_treeview(self, given_tk_id, columns, data, title="__", subt=""):
+    def add_treeview(
+        self, given_tk_id, columns, data, title="__", subt="", position="end"
+    ):
         """add a dataset result to the given tab tk_id"""
         if not self.use_gui:
             return
@@ -1620,7 +1701,9 @@ class NotebookForQueries:
             height=100,
         )
         f2.pack(fill="both", expand=True)
-        fw_result_nb.add(f2, text=title)
+        if position != "end" and not fw_result_nb.tabs():
+            position = "end"  # Tk refuses insert(0) in an empty notebook
+        fw_result_nb.insert(position, f2, text=title)
 
         # ttk.Style().configure('TLabelframe.label', font=("Arial",14, "bold"))
         # lines=queries
