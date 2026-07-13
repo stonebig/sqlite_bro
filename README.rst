@@ -1,8 +1,8 @@
-sqlite_bro : a graphic SQLite browser in 1 Python file
-======================================================
+sqlite_bro : a graphic SQLite and DuckDB browser in 1 Python file
+=================================================================
 
-sqlite_bro is a tool to browse SQLite databases with 
-any basic python installation.
+sqlite_bro is a tool to browse SQLite (and optionally DuckDB)
+databases with any basic python installation.
 
 
 Features

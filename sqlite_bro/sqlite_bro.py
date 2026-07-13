@@ -125,7 +125,9 @@ class App:
 
         if self.use_gui:
             self.tk_win.title(
-                "A graphic SQLite Client in 1 Python file (" + self.__version__ + ")"
+                "A graphic SQLite and DuckDB Client in 1 Python file ("
+                + self.__version__
+                + ")"
             )
             self.tk_win.option_add("*tearOff", FALSE)  # hint of tk documentation
             self.tk_win.minsize(600, 200)  # minimal size
@@ -228,7 +230,7 @@ class App:
             label="about",
             command=lambda: messagebox.showinfo(
                 message="""
-             \nSQLite_bro : a graphic SQLite Client in 1 Python file
+             \nSQLite_bro : a graphic SQLite and DuckDB Client in 1 Python file
              \nVersion """
                 + self.__version__
                 + " "
@@ -540,7 +542,7 @@ class App:
         )
         dbtext = os.path.basename(self.database_file)
         self.tk_win.title(
-            "A graphic SQLite Client in 1 Python file (%s) - %s %s"
+            "A graphic SQLite and DuckDB Client in 1 Python file (%s) - %s %s"
             % (self.__version__, engine_label, self.database_file)
         )
         id0 = self.db_tree.insert(
@@ -1402,7 +1404,7 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                                     )
                                 )
                             ):
-                                affected = rows[0][0] if rows else ""
+                                affected = rows[0][0] if rows else 0
                                 add_log(
                                     "%s rows affected" % affected
                                     if titles == ["Count"]
@@ -1727,7 +1729,8 @@ class NotebookForQueries:
             fw_Box.heading(
                 col, text=col.title(), command=lambda c=col: self.sortby(fw_Box, c, 0)
             )
-            fw_Box.column(col, width=font.Font().measure(col.title()))
+            # keep a little breathing room around the header text
+            fw_Box.column(col, width=font.Font().measure(col.title()) + 12)
 
         def flat(x):
             """replace line_return by space, if given a string"""
@@ -1747,7 +1750,7 @@ class NotebookForQueries:
             # adjust columns length if necessary and possible
             for indx, val in enumerate(line_cells):
                 try:
-                    ilen = font.Font().measure(val)
+                    ilen = font.Font().measure(val) + 12
                     if (
                         fw_Box.column(tree_columns[indx], width=None) < ilen
                         and ilen < 400
@@ -2640,7 +2643,8 @@ CREATE TABLE toto.new_item as select * from "main"."item";
 
     if "argparse" in globals():  # not before Python-3.2
         parser = argparse.ArgumentParser(
-            description="sqlite_bro : a graphic SQLite browser in 1 Python file"
+            description="sqlite_bro : a graphic SQLite and DuckDB browser"
+            " in 1 Python file"
         )
         parser.add_argument(
             "-q", "--quiet", action="store_true", help="do not launch the gui"
