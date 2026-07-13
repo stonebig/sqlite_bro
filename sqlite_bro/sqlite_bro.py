@@ -1092,11 +1092,12 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                         values=(definition, ""),
                     )
                     # level 3 : Insert a line per column of the Table/View
+                    # (id by column position : DuckDB views may repeat names)
                     for c in range(len(sub_c)):
                         self.db_tree.insert(
                             idc,
                             "end",
-                            "%s%s%s" % (root_txt, t_id, sub_c[c][0]),
+                            "%s%s.%s" % (root_txt, t_id, c),
                             text=columns[c],
                             tags=("run_up",),
                             values=("", ""),
