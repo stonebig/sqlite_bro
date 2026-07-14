@@ -182,6 +182,8 @@ class App:
         # feeding the top level menu
         self.menu = Menu(menubar)
         menubar.add_cascade(menu=self.menu, label="Database")
+        self.menu_clip = Menu(menubar)
+        menubar.add_cascade(menu=self.menu_clip, label="Clipboard")
         self.menu_help = Menu(menubar)
         menubar.add_cascade(menu=self.menu_help, label="?")
 
@@ -211,6 +213,18 @@ class App:
             )
         self.menu.add_separator()
         self.menu.add_command(label="Quit", command=self.quit_db)
+
+        # feeding clipboard sub-menu
+        self.menu_clip.add_command(
+            label="Copy selected table", command=self.copy_csvtb
+        )
+        self.menu_clip.add_command(
+            label="Copy script selection", command=self.copy_csvqr
+        )
+        self.menu_clip.add_separator()
+        self.menu_clip.add_command(
+            label="Paste into table 'from_clipboard'", command=self.paste_csvtb
+        )
 
         self.menu_help.add_command(
             label="about",
@@ -1472,14 +1486,15 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                         pass
             self.conn.conn.isolation_level = isolation  # restore standard
 
-    def import_csvtb(self):
+    def import_csvtb(self, csv_file=None):
         """import csv dialog (with guessing of encoding and separator)"""
-        csv_file = filedialog.askopenfilename(
-            initialdir=self.initialdir,
-            defaultextension=".db",
-            title="Choose a csv fileto import ",
-            filetypes=[("default", "*.csv"), ("other", "*.txt"), ("all", "*.*")],
-        )
+        if csv_file is None:
+            csv_file = filedialog.askopenfilename(
+                initialdir=self.initialdir,
+                defaultextension=".db",
+                title="Choose a csv fileto import ",
+                filetypes=[("default", "*.csv"), ("other", "*.txt"), ("all", "*.*")],
+            )
         if csv_file != "":
             self.set_initialdir(csv_file)
             # guess all via an object
@@ -1521,6 +1536,20 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                 ("Import", import_csvtb_ok),
                 actions,
             )
+
+    def paste_csvtb(self):
+        """paste clipboard into a table, via the csv import dialog"""
+        try:
+            content = self.tk_win.clipboard_get()
+        except TclError:
+            content = ""
+        if len(content.splitlines()) < 2:  # guess_sql_creation needs 2 lines
+            messagebox.showinfo(message="Clipboard has no usable text content")
+            return
+        csv_file = os.path.join(tmpf.gettempdir(), "from_clipboard.csv")
+        with open(csv_file, "w", encoding="utf-8", newline="") as f:
+            f.write(content)
+        self.import_csvtb(csv_file)
 
     def get_table_query(self):
         """return (name, select query) of the table selected in the db tree"""
@@ -1568,6 +1597,30 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
             self.tk_win.clipboard_clear()
             self.tk_win.clipboard_append(buffer.getvalue())
             self.tk_win.update()  # push to the system clipboard now
+
+    def copy_csvtb(self):
+        """get selected table definition and launch copy-to-clipboard dialog"""
+        table_query = self.get_table_query()
+        if table_query is not None:
+            title = 'Copy Table "%s" to Clipboard' % table_query[0]
+            self.copy_csv_dialog(table_query[1], title)
+
+    def copy_csvqr(self):
+        """get tab selected definition and launch copy-to-clipboard dialog"""
+        query = self.get_tab_query()
+        if query != "":
+            self.copy_csv_dialog(query, "Copy Query to Clipboard")
+
+    def copy_csv_dialog(self, query="--", text="Copy to Clipboard"):
+        """copy-to-clipboard dialog : like csv export, minus file and encoding"""
+        fields = [
+            "",
+            ["column separator", ["<TAB>", ",", ";", "|"]],
+            ["Header line", True],
+            "",
+            ["Data to export (MUST be 1 Request)", (query), "w", 100, 10],
+        ]
+        create_dialog(text, fields, ("Copy", copy_csv_ok), [self])
 
     def export_csv_dialog(self, query="--", text="undefined.csv", actions=[]):
         """export csv dialog"""
@@ -2032,6 +2085,17 @@ def read_this_csv(csv_file, encoding, delimiter, quotechar, header, decim):
                 for i in range(len(row)):
                     row[i] = row[i].replace(decim, ".")
             yield (row)
+
+
+def copy_csv_ok(thetop, entries, actions):
+    "copy a query result to the clipboard (action)"
+    d = {f[0]: f[1]() for f in entries if not isinstance(f, str)}
+    separ = "\t" if d["column separator"] == "<TAB>" else d["column separator"]
+    actions[0].copy_query_to_clipboard(
+        d["Data to export (MUST be 1 Request)"],
+        header=d["Header line"],
+        delimiter=separ,
+    )
 
 
 def export_csv_ok(thetop, entries, actions):
