@@ -1621,7 +1621,12 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
             "",
             ["Data to export (MUST be 1 Request)", (query), "w", 100, 10],
         ]
-        create_dialog(text, fields, ("Copy", copy_csv_ok), [self])
+        create_dialog(
+            text,
+            fields,
+            (("Copy and close", copy_csv_close_ok), ("Copy", copy_csv_ok)),
+            [self],
+        )
 
     def export_csv_dialog(self, query="--", text="undefined.csv", actions=[]):
         """export csv dialog"""
@@ -2019,19 +2024,24 @@ def create_dialog(title, fields_in, buttons, actions):
                     name.current(0)
                 name.grid(column=1, row=0, sticky="nsw", pady=0, padx=10)
                 fields[f][1] = name_var.get
-    # adding button below the same way
+    # adding buttons below the same way : one ("label", action) pair,
+    # or a tuple of such pairs ; a "Cancel" button is always appended
+    if isinstance(buttons[0], str):
+        buttons = (buttons,)
     mf_col += 1
     packing_frame = ttk.LabelFrame(content, borderwidth=5)
     packing_frame.grid(column=0, row=mf_col, sticky="nsew")
-    okbutton = ttk.Button(
-        packing_frame,
-        text=buttons[0],
-        command=lambda a=top, b=fields, c=actions: (buttons[1])(a, b, c),
-    )
+    col = 0
+    for label, action in buttons:
+        ttk.Button(
+            packing_frame,
+            text=label,
+            command=lambda a=top, b=fields, c=actions, f=action: f(a, b, c),
+        ).grid(column=col, row=mf_col)
+        col += 1
     cancelbutton = ttk.Button(packing_frame, text="Cancel", command=top.destroy)
-    okbutton.grid(column=0, row=mf_col)
-    cancelbutton.grid(column=1, row=mf_col)
-    for x in range(3):
+    cancelbutton.grid(column=col, row=mf_col)
+    for x in range(col + 2):
         Grid.columnconfigure(packing_frame, x, weight=1)
     top.grab_set()
 
@@ -2086,6 +2096,12 @@ def read_this_csv(csv_file, encoding, delimiter, quotechar, header, decim):
                 for i in range(len(row)):
                     row[i] = row[i].replace(decim, ".")
             yield (row)
+
+
+def copy_csv_close_ok(thetop, entries, actions):
+    "copy a query result to the clipboard, then close the dialog (action)"
+    copy_csv_ok(thetop, entries, actions)
+    thetop.destroy()
 
 
 def copy_csv_ok(thetop, entries, actions):
