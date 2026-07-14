@@ -1,11 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-from __future__ import print_function, unicode_literals, division  # Python2.7
-
-try:
-    import argparse  # Python>=3.2
-except ImportError:
-    pass  # Python<3.2
+import argparse
 
 import sqlite3 as sqlite
 
@@ -28,18 +23,9 @@ from os.path import expanduser
 import tempfile as tmpf
 import subprocess
 
-try:  # We are Python 3.3+
-    from tkinter import *
-    from tkinter import font, ttk, filedialog, messagebox
-    from tkinter.ttk import *
-except ImportError:  # or we are still Python2.7
-    from Tkinter import *
-    import Tkinter as tkinter
-    import tkFont as font
-    import tkFileDialog as filedialog
-    import tkMessageBox as messagebox
-    from ttk import *
-    import ttk as ttk
+from tkinter import *
+from tkinter import font, ttk, filedialog, messagebox
+from tkinter.ttk import *
 
 tipwindow = None
 
@@ -423,7 +409,7 @@ class App:
         if filename != "":
             self.set_initialdir(filename)
             text = os.path.split(filename)[1].split(".")[0]
-            with io.open(filename, encoding=guess_encoding(filename)[0]) as f:
+            with open(filename, encoding=guess_encoding(filename)[0]) as f:
                 script = f.read()
                 sqls = self.conn.get_sqlsplit(script, remove_comments=True)
                 dg = [
@@ -464,7 +450,7 @@ class App:
         )
         if filename != "":
             self.set_initialdir(filename)
-            with io.open(filename, "w", encoding="utf-8") as f:
+            with open(filename, "w", encoding="utf-8") as f:
                 for line in self.conn.iterdump():
                     f.write("%s\n" % line)
 
@@ -483,7 +469,7 @@ class App:
             )
         if filename != "":
             self.set_initialdir(filename)
-            with io.open(filename, "w", encoding="utf-8") as f:
+            with open(filename, "w", encoding="utf-8") as f:
                 if "你好 мир Artisou à croute" not in script:
                     f.write("/*utf-8 tag : 你好 мир Artisou à croute*/\n")
                 f.write(script)
@@ -617,7 +603,7 @@ class App:
         if filename == "":
             return
         self.set_initialdir(filename)
-        with io.open(filename, "w", encoding="utf-8") as f:
+        with open(filename, "w", encoding="utf-8") as f:
             if "你好 мир Artisou à croute" not in script:
                 f.write("/*utf-8 tag : 你好 мир Artisou à croute*/\n")
             self.create_and_add_results(script, active_tab_id, limit=99, log=f)
@@ -859,7 +845,7 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
         """chg a tab title"""
         widget, index = actions
         # build dico of result
-        d = {f[0]: f[1]() for f in entries if not isinstance(f, (type("e"), type("e")))}
+        d = {f[0]: f[1]() for f in entries if not isinstance(f, str)}
 
         title = d["new label"].strip()
         thetop.destroy()
@@ -1133,7 +1119,7 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
             """format data line log"""
             s = [
                 '"' + s.replace('"', '""') + '"'
-                if isinstance(s, (type("e"), type("e")))
+                if isinstance(s, str)
                 else str(s)
                 for s in r
             ]
@@ -1228,7 +1214,7 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                             write_mode = (
                                 "w" if self.init_output else "a"
                             )  # Write or Append
-                            with io.open(
+                            with open(
                                 self.output_file, write_mode, encoding=self.encode_in
                             ) as fout:
                                 fout.writelines(instru[len(".print") + 1 :] + "\n")
@@ -1282,7 +1268,7 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                             csv_file = csv_file.strip('"')
                             if (csv_file + "z")[0] == "~":
                                 csv_file = os.path.join(self.home, csv_file[1:])
-                            with io.open(csv_file, "w", encoding="utf-8") as f:
+                            with open(csv_file, "w", encoding="utf-8") as f:
                                 for line in self.conn.iterdump():
                                     f.write("%s\n" % line)
                         else:
@@ -1300,7 +1286,7 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                         filename = filename.strip('"')
                         if (filename + "z")[0] == "~":
                             filename = os.path.join(self.home, filename[1:])
-                        with io.open(
+                        with open(
                             filename, encoding=guess_encoding(filename)[0]
                         ) as f:
                             read_this = f.read()
@@ -1686,11 +1672,11 @@ class NotebookForQueries:
         if not self.use_gui:
             return
         # ensure we work on lists
-        if isinstance(columns, (type("e"), type("e"))):
+        if isinstance(columns, str):
             tree_columns = [columns]
         else:
             tree_columns = columns
-        lines = [data] if isinstance(data, (type("e"), type("e"))) else data
+        lines = [data] if isinstance(data, str) else data
 
         # get back reference to Notebooks of Results
         # (see http://www.astro.washington.edu/users/rowen/TkinterSummary.html)
@@ -1734,14 +1720,14 @@ class NotebookForQueries:
 
         def flat(x):
             """replace line_return by space, if given a string"""
-            if isinstance(x, (type("e"), type("e"))):
+            if isinstance(x, str):
                 return x.replace("\n", " ")
             return x
 
         # feed Treeview Lines
         for items in lines:
             # if line is a string, redo a tuple
-            item = (items,) if isinstance(items, (type("e"), type("e"))) else items
+            item = (items,) if isinstance(items, str) else items
 
             # replace line_return by space (grid don't like line_returns)
             line_cells = tuple(flat(item[c]) for c in range(len(tree_columns)))
@@ -1784,13 +1770,13 @@ class guess_csv:
         self.default_quote = '"'
         self.encodings = guess_encoding(csv_file)
         self.table_name = os.path.basename(csv_file).split(".")[0]
-        with io.open(csv_file, encoding=self.encodings[0]) as f:
+        with open(csv_file, encoding=self.encodings[0]) as f:
             self.preview = f.read(9999)
             try:
                 dialect = csv.Sniffer().sniff(self.preview)
                 self.has_header = csv.Sniffer().has_header(self.preview)
                 self.default_sep = dialect.delimiter
-                self.default_quote = Dialect.quotechar
+                self.default_quote = dialect.quotechar
             except:
                 pass  # sniffer can fail
         self.default_decims = [".", ","]
@@ -1801,22 +1787,13 @@ class guess_csv:
 
 def guess_sql_creation(table_name, separ, decim, header, data, quoter='"'):
     """guess the sql creation request for the table who will receive data"""
-    try:
-        dlines = list(
-            csv.reader(
-                data.replace("\n\n", "\n").splitlines(),
-                delimiter=separ,
-                quotechar=quoter,
-            )
+    dlines = list(
+        csv.reader(
+            data.replace("\n\n", "\n").splitlines(),
+            delimiter=separ,
+            quotechar=quoter,
         )
-    except:  # minimal hack for python2.7
-        dlines = list(
-            csv.reader(
-                data.replace("\n\n", "\n").splitlines(),
-                delimiter=str(separ),
-                quotechar=str(quoter),
-            )
-        )
+    )
     r, val = list(dlines[0]), list(dlines[1])
     typ = ["TEXT"] * len(r)  # default value is TEXT
     for i in range(len(r)):
@@ -1859,7 +1836,7 @@ def guess_sql_creation(table_name, separ, decim, header, data, quoter='"'):
 
 def guess_encoding(csv_file):
     """guess the encoding of the given file"""
-    with io.open(csv_file, "rb") as f:
+    with open(csv_file, "rb") as f:
         data = f.read(5)
     if data.startswith(b"\xEF\xBB\xBF"):  # UTF-8 with a "BOM"
         return ["utf-8-sig"]
@@ -1867,7 +1844,7 @@ def guess_encoding(csv_file):
         return ["utf-16"]
     else:  # in Windows, guessing utf-8 doesn't work, so we have to try
         try:
-            with io.open(csv_file, encoding="utf-8") as f:
+            with open(csv_file, encoding="utf-8") as f:
                 preview = f.read(222222)
                 return ["utf-8"]
         except:
@@ -1891,18 +1868,18 @@ def create_dialog(title, fields_in, buttons, actions):
     mf_col = -1
     for f in range(len(fields)):  # same structure out
         field = fields[f]
-        if isinstance(field, (type("e"), type("e"))) or mf_col == -1:
+        if isinstance(field, str) or mf_col == -1:
             # a new horizontal frame
             mf_col += 1
             ta_col = -1
-            if isinstance(field, (type("e"), type("e"))) and field == "":
+            if isinstance(field, str) and field == "":
                 mf_frame = ttk.Frame(content, borderwidth=1)
             else:
                 mf_frame = ttk.LabelFrame(content, borderwidth=1, text=field)
             mf_frame.grid(column=0, row=mf_col, sticky="nsew")
             Grid.rowconfigure(mf_frame, 0, weight=1)
             content.rowconfigure(mf_col, weight=1)
-        if not isinstance(field, (type("e"), type("e"))):
+        if not isinstance(field, str):
             # a new vertical frame
             ta_col += 1
             Grid.columnconfigure(mf_frame, ta_col, weight=1)
@@ -1990,7 +1967,7 @@ def import_csvtb_ok(thetop, entries, actions):
     """read input values from tk formular"""
     conn, actualize_db = actions
     # build dico of result
-    d = {f[0]: f[1]() for f in entries if not isinstance(f, (type("e"), type("e")))}
+    d = {f[0]: f[1]() for f in entries if not isinstance(f, str)}
     # affect to variables
     csv_file = d["csv Name"].strip()
     table_name = d["table Name"].strip()
@@ -2025,33 +2002,24 @@ def import_csvtb_ok(thetop, entries, actions):
 
 def read_this_csv(csv_file, encoding, delimiter, quotechar, header, decim):
     """yield csv data records from a file"""
-    # handle Python 2/3
-    try:
-        reader = csv.reader(
-            open(csv_file, "r", encoding=encoding),
-            delimiter=delimiter,
-            quotechar=quotechar,
-        )
-    except:  # minimal hack for 2.7
-        reader = csv.reader(
-            open(csv_file, "r"), delimiter=str(delimiter), quotechar=str(quotechar)
-        )
-    # handle header
-    if header:
-        next(reader)
-    # otherwise handle special decimal treatment
-    for row in reader:
-        if decim != "." and not isinstance(row, (type("e"), type("e"))):
-            for i in range(len(row)):
-                row[i] = row[i].replace(decim, ".")
-        yield (row)
+    with open(csv_file, "r", encoding=encoding, newline="") as f:
+        reader = csv.reader(f, delimiter=delimiter, quotechar=quotechar)
+        # handle header
+        if header:
+            next(reader)
+        # otherwise handle special decimal treatment
+        for row in reader:
+            if decim != "." and not isinstance(row, str):
+                for i in range(len(row)):
+                    row[i] = row[i].replace(decim, ".")
+            yield (row)
 
 
 def export_csv_ok(thetop, entries, actions):
     "export a csv table (action)"
     conn = actions[0]
     # build dico of result
-    d = {f[0]: f[1]() for f in entries if not isinstance(f, (type("e"), type("e")))}
+    d = {f[0]: f[1]() for f in entries if not isinstance(f, str)}
 
     csv_file = d["csv Name"].strip()
     conn.export_writer(
@@ -2532,34 +2500,16 @@ class Baresql:
             ):
                 return -1
         nb_columns = len(cursor.description)
-        # with PyPy, the "with io.open" for is more than necessary
-        if sys.version_info[0] != 2:  # python3
-            write_mode = "w" if initialize else "a"  # Write or Append
-            with io.open(csv_file, write_mode, newline="", encoding=encoding) as fout:
-                writer = csv.writer(
-                    fout, delimiter=delimiter, quotechar='"', quoting=csv.QUOTE_MINIMAL
-                )
-                if header:
-                    writer.writerow(
-                        [i if isinstance(i, str) else i[0] for i in cursor.description]
-                    )  # PyPy as a strange list of list
-                writer.writerows(cursor.fetchall())
-                fout.close  # PyPy3-7.3.5 needs that close
-        else:  # python2.7 (minimal)
-            write_mode = "wb" if initialize else "ab"  # Write or Append
-            with io.open(csv_file, write_mode) as fout:
-                writer = csv.writer(
-                    fout,
-                    delimiter=str(delimiter),
-                    quotechar=str('"'),
-                    quoting=csv.QUOTE_MINIMAL,
-                )
-                if header:
-                    writer.writerow(
-                        [i if isinstance(i, str) else i[0] for i in cursor.description]
-                    )  # heading row with anti-PyPy bug
-                writer.writerows(cursor.fetchall())
-                fout.close  # PyPy3-7.3.5 needs that close
+        write_mode = "w" if initialize else "a"  # Write or Append
+        with open(csv_file, write_mode, newline="", encoding=encoding) as fout:
+            writer = csv.writer(
+                fout, delimiter=delimiter, quotechar=quotechar, quoting=csv.QUOTE_MINIMAL
+            )
+            if header:
+                writer.writerow(
+                    [i if isinstance(i, str) else i[0] for i in cursor.description]
+                )  # PyPy as a strange list of list
+            writer.writerows(cursor.fetchall())
         return nb_columns
 
 
@@ -2641,62 +2591,56 @@ CREATE TABLE toto.new_item as select * from "main"."item";
 .dump
 """
 
-    if "argparse" in globals():  # not before Python-3.2
-        parser = argparse.ArgumentParser(
-            description="sqlite_bro : a graphic SQLite and DuckDB browser"
-            " in 1 Python file"
-        )
-        parser.add_argument(
-            "-q", "--quiet", action="store_true", help="do not launch the gui"
-        )
-        parser.add_argument(
-            "-w",
-            "--wait",
-            action="store_true",
-            help="wait the user to launch the scripts",
-        )
-        parser.add_argument(
-            "-db",
-            "--database",
-            default=":memory:",
-            type=str,
-            help="specify initial Database if not ':memory:'"
-            " (a .duckdb/.ddb extension selects the DuckDB engine)",
-        )
-        parser.add_argument(
-            "-sc", "--scripts", type=str, help="qive a list of initial scripts"
-        )
-        args = parser.parse_args()
+    parser = argparse.ArgumentParser(
+        description="sqlite_bro : a graphic SQLite and DuckDB browser"
+        " in 1 Python file"
+    )
+    parser.add_argument(
+        "-q", "--quiet", action="store_true", help="do not launch the gui"
+    )
+    parser.add_argument(
+        "-w",
+        "--wait",
+        action="store_true",
+        help="wait the user to launch the scripts",
+    )
+    parser.add_argument(
+        "-db",
+        "--database",
+        default=":memory:",
+        type=str,
+        help="specify initial Database if not ':memory:'"
+        " (a .duckdb/.ddb extension selects the DuckDB engine)",
+    )
+    parser.add_argument(
+        "-sc", "--scripts", type=str, help="qive a list of initial scripts"
+    )
+    args = parser.parse_args()
 
-        if args.quiet:
-            app = App(use_gui=False)
-        else:
-            app = App(use_gui=True)
-        # start with a memory Database and a welcome
-        app.new_db(":memory:")
-        if args.database:
-            app.open_db(args.database)
-        if args.scripts:
-            if isinstance(args.scripts, str):
-                scripts = [args.scripts, "", ""]
-            else:
-                scripts = args.scripts
-            for script in scripts:
-                if os.path.isfile(script):
-                    with io.open(script, encoding=guess_encoding(script)[0]) as f:
-                        welcome_text = f.read()
-                        app.n.new_query_tab("Welcome", welcome_text)
-                        if not args.wait:
-                            app.run_tab()
-        elif app.conn.engine != "duckdb":  # duckdb welcome tab auto-shows
-            app.n.new_query_tab("Welcome", welcome_text)
-        if args.quiet:
-            app.close_db
+    if args.quiet:
+        app = App(use_gui=False)
     else:
         app = App(use_gui=True)
-        # start with a memory Database and a welcome
-        app.new_db(":memory:")
+    # start with a memory Database and a welcome
+    app.new_db(":memory:")
+    if args.database:
+        app.open_db(args.database)
+    if args.scripts:
+        if isinstance(args.scripts, str):
+            scripts = [args.scripts, "", ""]
+        else:
+            scripts = args.scripts
+        for script in scripts:
+            if os.path.isfile(script):
+                with open(script, encoding=guess_encoding(script)[0]) as f:
+                    welcome_text = f.read()
+                    app.n.new_query_tab("Welcome", welcome_text)
+                    if not args.wait:
+                        app.run_tab()
+    elif app.conn.engine != "duckdb":  # duckdb welcome tab auto-shows
         app.n.new_query_tab("Welcome", welcome_text)
+    if args.quiet:
+        app.close_db
     if app.use_gui:
         app.tk_win.mainloop()
 
