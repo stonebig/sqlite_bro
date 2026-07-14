@@ -1545,7 +1545,10 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
         except TclError:
             content = ""
         if len(content.splitlines()) < 2:  # guess_sql_creation needs 2 lines
-            messagebox.showinfo(message="Clipboard has no usable text content")
+            messagebox.showinfo(
+                parent=self.tk_win,
+                message="Clipboard has no usable text content",
+            )
             return
         csv_file = os.path.join(tmpf.gettempdir(), "from_clipboard.csv")
         with open(csv_file, "w", encoding="utf-8", newline="") as f:
@@ -1934,6 +1937,10 @@ def create_dialog(title, fields_in, buttons, actions):
     # drawing the request form
     top = Toplevel()
     top.title(title)
+    # pop up near the main window (matters on multi-screen setups)
+    top.geometry(
+        "+%d+%d" % (top.master.winfo_rootx() + 60, top.master.winfo_rooty() + 60)
+    )
     top.columnconfigure(0, weight=1)
     top.rowconfigure(0, weight=1)
     # drawing global frame
