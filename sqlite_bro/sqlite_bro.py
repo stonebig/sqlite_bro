@@ -63,7 +63,8 @@ pydef py_fib_typed(n: int) -> int:
     return fib(n);
 \n-- to USE a python embedded function :
 select py_hello(), py_fib(6) as fibonacci, py_fib_typed(7) as fib_typed,
-       version() as duckdb_version;
+       version() as duckdb_version,
+       current_localtime() t, current_localtimestamp() dt;
 \n-- some DuckDB goodies :
 DESCRIBE item;
 SUMMARIZE item;
@@ -2630,7 +2631,8 @@ pydef py_fib(n):
    return("%s" % fib(n*1));
 
 -- to USE a python embedded function and nesting of embedded functions:
-select py_hello(), py_fib(6) as fibonacci, sqlite_version();
+select py_hello(), py_fib(6) as fibonacci, sqlite_version(),
+       time('now', 'localtime') t, datetime('now', 'localtime') dt;
 \n-- to EXPORT :
 --    a TABLE, select TABLE, then click on icon 'SQL->CSV'
 --    a QUERY RESULT, select the SCRIPT text, then click on icon '???->CSV',
