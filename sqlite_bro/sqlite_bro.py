@@ -183,8 +183,6 @@ class App:
         # feeding the top level menu
         self.menu = Menu(menubar)
         menubar.add_cascade(menu=self.menu, label="Database")
-        self.menu_clip = Menu(menubar)
-        menubar.add_cascade(menu=self.menu_clip, label="Clipboard")
         self.menu_help = Menu(menubar)
         menubar.add_cascade(menu=self.menu_help, label="?")
 
@@ -214,18 +212,6 @@ class App:
             )
         self.menu.add_separator()
         self.menu.add_command(label="Quit", command=self.quit_db)
-
-        # feeding clipboard sub-menu
-        self.menu_clip.add_command(
-            label="Copy selected table", command=self.copy_csvtb
-        )
-        self.menu_clip.add_command(
-            label="Copy script selection", command=self.copy_csvqr
-        )
-        self.menu_clip.add_separator()
-        self.menu_clip.add_command(
-            label="Paste into table 'from_clipboard'", command=self.paste_csvtb
-        )
 
         self.menu_help.add_command(
             label="about",
@@ -262,9 +248,12 @@ class App:
                 "Create a new script",
             ),
             ("csvin_img", self.import_csvtb, "Import a CSV file into a table"),
+            ("clipin_img", self.paste_csvtb, "Import Clipboard into a table"),
             ("csvex_img", self.export_csvtb, "Export selected table to a CSV file"),
+            ("clipex_img", self.copy_csvtb, "Export selected table to Clipboard"),
             ("dbdef_img", self.savdb_script, "Save main database as a SQL script"),
             ("qryex_img", self.export_csvqr, "Export script selection to a CSV file"),
+            ("qryclip_img", self.copy_csvqr, "Export script selection to Clipboard"),
             (
                 "exe_img",
                 self.exsav_script,
@@ -779,6 +768,28 @@ DwMUWBIEcQkDo6MEElgMEQSsrawRk1MLAxaZBQ4DDGduGA0LdV8hADs=
 R0lGODdhGAAYAJkAAP///56fnQAAAP8AACwAAAAAGAAYAAACXIQPoporeR4yEtZ3J511e845zah1
 oKV9WEQxqYOJX0rX9oDndp3jO6/7aXqDVOCIPB50Pk0yaQgCijSlITBt/p4B6ZbL3VkBYKxt7DTX
 0BN2uowUw+NndVq+tk8KADs=
+""",
+            "clipin_img": """\
+R0lGODdhGAAYAIQAAP////j4+Ojo6eDg4d7g4N7e4N7d4NjY2r/Cw77AwrCxsjOqM6Sop6SmpJye
+n5GRkYuNkIyMjXl6fJZvM2FkZmBgYV9gYV9fX1dXV1VVVUpKSjc3NwAAAAAAAAAAAAAAACwAAAAA
+GAAYAEAIyAADCBxIsKDACggNKiQ4YQIABQsiKgDQUMADAQYtYlzIUWFDACBDUpzQMUDEkw1TpoRw
+gAIFCy9jHoBQsqbAlAhzprT5UYFPnyNLLgjQ8OTPoB1PRlxowQGCBAkQSIXKgIJNDRQiQIX6gEIG
+m2AP5qwQlihOhCp5OhQJsqFatm1J1vx4MqTbpAsm1BV5l6PSkhs0XHB5IcMGk0qHGqRwQMCAxwUI
+DHBsteQBCw0UQH2qoAEFAzUzSDhAujRpCZVtBsZwQcNhsAEBADs=
+""",
+            "clipex_img": """\
+R0lGODdhGAAYAIQAAP////j4+Ojo6eDg4d7g4N7d4NjY2r/Cw77AwrCxsjOqM6Sop6SmpJyen5GR
+kYuNkIyMjXl6fJZvM2FkZmBgYV9gYV9fX1dXV1VVVUpKSjc3NwAAAAAAAAAAAAAAAAAAACwAAAAA
+GAAYAEAIxQADCBxIsKBACggNKiQoQYHDhwkASJAQwIEAgwIcLNy4cSKAjyAlUuQosKFDkxMnPjAw
+YUIFlzANPCBJs+REhDhT1vSYoGdPkTslAHioIOJEmg83TmhwAAGCA1CfLphQM8MECE6dOpiAoabX
+gzgpfA2QUkJOnTQ9hvx4NK3QtUDdElXAdiTJiXPr1kwqUIFBDRkstLSAQUMAvgsnGBAwoPEAAo0F
+UCVpoAKDBFkRJGAwoQBNDBEMiB4tOsLkmoAvWMhg2GtAADs=
+""",
+            "qryclip_img": """\
+R0lGODdhGAAYAIIAAP///7Cxsp6fnZZvM2BgYf8AAAAAAAAAACwAAAAAGAAYAEAIjAABCBxIsKBA
+AggNKhRYoKHDABADABgwQKCAixgzYlzIsSBFhRQ1bmTYcEBJiigrAhDJsqPLiRQRykT5EiaAiBBt
+vnRYAKfOiwMFAHBYc6XQhUA7JlW4tOhCmQmdppxJ8+VHg1ddZiW4dSHPAh5VdvwaluVRogw5ikRb
+c6lZl00LxjVoViPco0zxGgwIADs=
 """,
             "sqlin_img": """\
 R0lGODdhGAAYALsAAP///46z2Xul02SJtp6fnenp6f8AAMLCwaHA4IODgoCo01RymIOPnmKGswAA
