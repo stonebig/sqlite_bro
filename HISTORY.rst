@@ -1,6 +1,26 @@
 Changelog
 =========
 
+2026-07-13b : v1.0.0 'Clip me down !'
+-------------------------------------
+
+* copy/paste via the Clipboard, with 3 new toolbar icons : export selected table to clipboard, export script selection to clipboard, import clipboard into a table 'from_clipboard'
+
+* copy reuses the csv export machinery : optional header line, choice of separator (TAB first, Excel-friendly), robust to utf-8 ; paste reuses the csv import dialog with all its guessing (separator, header, decimal)
+
+* copy dialog offers 'Copy and close' / 'Copy' / 'Cancel'
+
+* dialogs now pop up near the main window (multi-screen fix)
+
+* welcome demos show current local time and timestamp (DuckDB : current_localtimestamp() avoids the pytz requirement of get_current_timestamp())
+
+* housekeeping : Python 2.7 / pre-3.3 compatibility code removed
+
+* fix : the csv-sniffed quotechar was silently ignored (NameError), and export_writer now honors its quotechar parameter
+
+* docs : icon gifs tracked in docs/output_gifs, incl. the 3 new clipboard icons
+
+
 2026-07-13a : v0.14.0 'Quack me up !'
 -------------------------------------
 

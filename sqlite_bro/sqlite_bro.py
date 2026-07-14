@@ -97,8 +97,8 @@ class App:
 
     def __init__(self, use_gui=True):
         """create a tkk graphic interface with a main window tk_win"""
-        self.__version__ = "0.14.0"
-        self._title = "of 2026-07-12 : 'Quack me up !'"
+        self.__version__ = "1.0.0"
+        self._title = "of 2026-07-13 : 'Clip me down !'"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.initialdir = "."
