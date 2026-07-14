@@ -1522,10 +1522,8 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                 actions,
             )
 
-    def export_csvtb(self):
-        """get selected table definition and launch cvs export dialog"""
-        # determine selected table
-        actions = [self.conn, self.db_tree]
+    def get_table_query(self):
+        """return (name, select query) of the table selected in the db tree"""
         selitem = self.db_tree.focus()  # get tree item having the focus
         if selitem != "":
             seltag = self.db_tree.item(selitem, "tag")[0]
@@ -1533,13 +1531,12 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                 selitem = self.db_tree.parent(selitem)
             # get final information
             definition, query = self.db_tree.item(selitem, "values")
-            if query != "":  # run the export_csv dialog
-                title = 'Export Table "%s" to ?' % self.db_tree.item(selitem, "text")
-                self.export_csv_dialog(query, title, actions)
+            if query != "":
+                return self.db_tree.item(selitem, "text"), query
+        return None
 
-    def export_csvqr(self):
-        """get tab selected definition and launch cvs export dialog"""
-        actions = [self.conn, self.n]
+    def get_tab_query(self):
+        """return the current script tab selection (or its whole text)"""
         active_tab_id = self.n.notebook.select()
         if active_tab_id != "":  # get current selection (or all)
             fw = self.n.fw_labels[active_tab_id]
@@ -1547,8 +1544,30 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                 query = fw.get("sel.first", "sel.last")
             except:
                 query = fw.get(1.0, END)[:-1]
-            if query != "":
-                self.export_csv_dialog(query, "Export Query", actions)
+            return query
+        return ""
+
+    def export_csvtb(self):
+        """get selected table definition and launch cvs export dialog"""
+        table_query = self.get_table_query()
+        if table_query is not None:
+            title = 'Export Table "%s" to ?' % table_query[0]
+            self.export_csv_dialog(table_query[1], title, [self.conn, self.db_tree])
+
+    def export_csvqr(self):
+        """get tab selected definition and launch cvs export dialog"""
+        query = self.get_tab_query()
+        if query != "":
+            self.export_csv_dialog(query, "Export Query", [self.conn, self.n])
+
+    def copy_query_to_clipboard(self, query, header=True, delimiter="\t"):
+        """run query and place its result in the clipboard as csv text"""
+        buffer = io.StringIO()
+        if self.conn.export_writer(query, buffer,
+                                   header=header, delimiter=delimiter) > 0:
+            self.tk_win.clipboard_clear()
+            self.tk_win.clipboard_append(buffer.getvalue())
+            self.tk_win.update()  # push to the system clipboard now
 
     def export_csv_dialog(self, query="--", text="undefined.csv", actions=[]):
         """export csv dialog"""
@@ -2500,8 +2519,8 @@ class Baresql:
             ):
                 return -1
         nb_columns = len(cursor.description)
-        write_mode = "w" if initialize else "a"  # Write or Append
-        with open(csv_file, write_mode, newline="", encoding=encoding) as fout:
+
+        def write_rows(fout):
             writer = csv.writer(
                 fout, delimiter=delimiter, quotechar=quotechar, quoting=csv.QUOTE_MINIMAL
             )
@@ -2510,6 +2529,13 @@ class Baresql:
                     [i if isinstance(i, str) else i[0] for i in cursor.description]
                 )  # PyPy as a strange list of list
             writer.writerows(cursor.fetchall())
+
+        if hasattr(csv_file, "write"):  # file-like target (e.g. clipboard buffer)
+            write_rows(csv_file)
+        else:
+            write_mode = "w" if initialize else "a"  # Write or Append
+            with open(csv_file, write_mode, newline="", encoding=encoding) as fout:
+                write_rows(fout)
         return nb_columns
 
 
