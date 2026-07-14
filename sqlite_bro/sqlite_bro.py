@@ -1,11 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-from __future__ import print_function, unicode_literals, division  # Python2.7
-
-try:
-    import argparse  # Python>=3.2
-except ImportError:
-    pass  # Python<3.2
+import argparse
 
 import sqlite3 as sqlite
 
@@ -28,18 +23,9 @@ from os.path import expanduser
 import tempfile as tmpf
 import subprocess
 
-try:  # We are Python 3.3+
-    from tkinter import *
-    from tkinter import font, ttk, filedialog, messagebox
-    from tkinter.ttk import *
-except ImportError:  # or we are still Python2.7
-    from Tkinter import *
-    import Tkinter as tkinter
-    import tkFont as font
-    import tkFileDialog as filedialog
-    import tkMessageBox as messagebox
-    from ttk import *
-    import ttk as ttk
+from tkinter import *
+from tkinter import font, ttk, filedialog, messagebox
+from tkinter.ttk import *
 
 tipwindow = None
 
@@ -77,7 +63,8 @@ pydef py_fib_typed(n: int) -> int:
     return fib(n);
 \n-- to USE a python embedded function :
 select py_hello(), py_fib(6) as fibonacci, py_fib_typed(7) as fib_typed,
-       version() as duckdb_version;
+       version() as duckdb_version,
+       current_localtime() t, current_localtimestamp() dt;
 \n-- some DuckDB goodies :
 DESCRIBE item;
 SUMMARIZE item;
@@ -261,9 +248,12 @@ class App:
                 "Create a new script",
             ),
             ("csvin_img", self.import_csvtb, "Import a CSV file into a table"),
+            ("clipin_img", self.paste_csvtb, "Import Clipboard into a table"),
             ("csvex_img", self.export_csvtb, "Export selected table to a CSV file"),
+            ("clipex_img", self.copy_csvtb, "Export selected table to Clipboard"),
             ("dbdef_img", self.savdb_script, "Save main database as a SQL script"),
             ("qryex_img", self.export_csvqr, "Export script selection to a CSV file"),
+            ("qryclip_img", self.copy_csvqr, "Export script selection to Clipboard"),
             (
                 "exe_img",
                 self.exsav_script,
@@ -423,7 +413,7 @@ class App:
         if filename != "":
             self.set_initialdir(filename)
             text = os.path.split(filename)[1].split(".")[0]
-            with io.open(filename, encoding=guess_encoding(filename)[0]) as f:
+            with open(filename, encoding=guess_encoding(filename)[0]) as f:
                 script = f.read()
                 sqls = self.conn.get_sqlsplit(script, remove_comments=True)
                 dg = [
@@ -464,7 +454,7 @@ class App:
         )
         if filename != "":
             self.set_initialdir(filename)
-            with io.open(filename, "w", encoding="utf-8") as f:
+            with open(filename, "w", encoding="utf-8") as f:
                 for line in self.conn.iterdump():
                     f.write("%s\n" % line)
 
@@ -483,7 +473,7 @@ class App:
             )
         if filename != "":
             self.set_initialdir(filename)
-            with io.open(filename, "w", encoding="utf-8") as f:
+            with open(filename, "w", encoding="utf-8") as f:
                 if "你好 мир Artisou à croute" not in script:
                     f.write("/*utf-8 tag : 你好 мир Artisou à croute*/\n")
                 f.write(script)
@@ -617,7 +607,7 @@ class App:
         if filename == "":
             return
         self.set_initialdir(filename)
-        with io.open(filename, "w", encoding="utf-8") as f:
+        with open(filename, "w", encoding="utf-8") as f:
             if "你好 мир Artisou à croute" not in script:
                 f.write("/*utf-8 tag : 你好 мир Artisou à croute*/\n")
             self.create_and_add_results(script, active_tab_id, limit=99, log=f)
@@ -779,6 +769,28 @@ R0lGODdhGAAYAJkAAP///56fnQAAAP8AACwAAAAAGAAYAAACXIQPoporeR4yEtZ3J511e845zah1
 oKV9WEQxqYOJX0rX9oDndp3jO6/7aXqDVOCIPB50Pk0yaQgCijSlITBt/p4B6ZbL3VkBYKxt7DTX
 0BN2uowUw+NndVq+tk8KADs=
 """,
+            "clipin_img": """\
+R0lGODdhGAAYAIQAAP////j4+Ojo6eDg4d7g4N7e4N7d4NjY2r/Cw77AwrCxsjOqM6Sop6SmpJye
+n5GRkYuNkIyMjXl6fJZvM2FkZmBgYV9gYV9fX1dXV1VVVUpKSjc3NwAAAAAAAAAAAAAAACwAAAAA
+GAAYAEAIyAADCBxIsKDACggNKiQ4YQIABQsiKgDQUMADAQYtYlzIUWFDACBDUpzQMUDEkw1TpoRw
+gAIFCy9jHoBQsqbAlAhzprT5UYFPnyNLLgjQ8OTPoB1PRlxowQGCBAkQSIXKgIJNDRQiQIX6gEIG
+m2AP5qwQlihOhCp5OhQJsqFatm1J1vx4MqTbpAsm1BV5l6PSkhs0XHB5IcMGk0qHGqRwQMCAxwUI
+DHBsteQBCw0UQH2qoAEFAzUzSDhAujRpCZVtBsZwQcNhsAEBADs=
+""",
+            "clipex_img": """\
+R0lGODdhGAAYAIQAAP////j4+Ojo6eDg4d7g4N7d4NjY2r/Cw77AwrCxsjOqM6Sop6SmpJyen5GR
+kYuNkIyMjXl6fJZvM2FkZmBgYV9gYV9fX1dXV1VVVUpKSjc3NwAAAAAAAAAAAAAAAAAAACwAAAAA
+GAAYAEAIxQADCBxIsKBACggNKiQoQYHDhwkASJAQwIEAgwIcLNy4cSKAjyAlUuQosKFDkxMnPjAw
+YUIFlzANPCBJs+REhDhT1vSYoGdPkTslAHioIOJEmg83TmhwAAGCA1CfLphQM8MECE6dOpiAoabX
+gzgpfA2QUkJOnTQ9hvx4NK3QtUDdElXAdiTJiXPr1kwqUIFBDRkstLSAQUMAvgsnGBAwoPEAAo0F
+UCVpoAKDBFkRJGAwoQBNDBEMiB4tOsLkmoAvWMhg2GtAADs=
+""",
+            "qryclip_img": """\
+R0lGODdhGAAYAIIAAP///7Cxsp6fnZZvM2BgYf8AAAAAAAAAACwAAAAAGAAYAEAIjAABCBxIsKBA
+AggNKhRYoKHDABADABgwQKCAixgzYlzIsSBFhRQ1bmTYcEBJiigrAhDJsqPLiRQRykT5EiaAiBBt
+vnRYAKfOiwMFAHBYc6XQhUA7JlW4tOhCmQmdppxJ8+VHg1ddZiW4dSHPAh5VdvwaluVRogw5ikRb
+c6lZl00LxjVoViPco0zxGgwIADs=
+""",
             "sqlin_img": """\
 R0lGODdhGAAYALsAAP///46z2Xul02SJtp6fnenp6f8AAMLCwaHA4IODgoCo01RymIOPnmKGswAA
 AAAAACwAAAAAGAAYAAAEkRDIOYm9N9G9SfngR2jclnhHqh7FWAKZF84uFxdr3pb3TPOWEy6n2tkG
@@ -859,7 +871,7 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
         """chg a tab title"""
         widget, index = actions
         # build dico of result
-        d = {f[0]: f[1]() for f in entries if not isinstance(f, (type("e"), type("e")))}
+        d = {f[0]: f[1]() for f in entries if not isinstance(f, str)}
 
         title = d["new label"].strip()
         thetop.destroy()
@@ -1133,7 +1145,7 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
             """format data line log"""
             s = [
                 '"' + s.replace('"', '""') + '"'
-                if isinstance(s, (type("e"), type("e")))
+                if isinstance(s, str)
                 else str(s)
                 for s in r
             ]
@@ -1228,7 +1240,7 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                             write_mode = (
                                 "w" if self.init_output else "a"
                             )  # Write or Append
-                            with io.open(
+                            with open(
                                 self.output_file, write_mode, encoding=self.encode_in
                             ) as fout:
                                 fout.writelines(instru[len(".print") + 1 :] + "\n")
@@ -1282,7 +1294,7 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                             csv_file = csv_file.strip('"')
                             if (csv_file + "z")[0] == "~":
                                 csv_file = os.path.join(self.home, csv_file[1:])
-                            with io.open(csv_file, "w", encoding="utf-8") as f:
+                            with open(csv_file, "w", encoding="utf-8") as f:
                                 for line in self.conn.iterdump():
                                     f.write("%s\n" % line)
                         else:
@@ -1300,7 +1312,7 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                         filename = filename.strip('"')
                         if (filename + "z")[0] == "~":
                             filename = os.path.join(self.home, filename[1:])
-                        with io.open(
+                        with open(
                             filename, encoding=guess_encoding(filename)[0]
                         ) as f:
                             read_this = f.read()
@@ -1486,14 +1498,15 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                         pass
             self.conn.conn.isolation_level = isolation  # restore standard
 
-    def import_csvtb(self):
+    def import_csvtb(self, csv_file=None):
         """import csv dialog (with guessing of encoding and separator)"""
-        csv_file = filedialog.askopenfilename(
-            initialdir=self.initialdir,
-            defaultextension=".db",
-            title="Choose a csv fileto import ",
-            filetypes=[("default", "*.csv"), ("other", "*.txt"), ("all", "*.*")],
-        )
+        if csv_file is None:
+            csv_file = filedialog.askopenfilename(
+                initialdir=self.initialdir,
+                defaultextension=".db",
+                title="Choose a csv fileto import ",
+                filetypes=[("default", "*.csv"), ("other", "*.txt"), ("all", "*.*")],
+            )
         if csv_file != "":
             self.set_initialdir(csv_file)
             # guess all via an object
@@ -1536,10 +1549,25 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                 actions,
             )
 
-    def export_csvtb(self):
-        """get selected table definition and launch cvs export dialog"""
-        # determine selected table
-        actions = [self.conn, self.db_tree]
+    def paste_csvtb(self):
+        """paste clipboard into a table, via the csv import dialog"""
+        try:
+            content = self.tk_win.clipboard_get()
+        except TclError:
+            content = ""
+        if len(content.splitlines()) < 2:  # guess_sql_creation needs 2 lines
+            messagebox.showinfo(
+                parent=self.tk_win,
+                message="Clipboard has no usable text content",
+            )
+            return
+        csv_file = os.path.join(tmpf.gettempdir(), "from_clipboard.csv")
+        with open(csv_file, "w", encoding="utf-8", newline="") as f:
+            f.write(content)
+        self.import_csvtb(csv_file)
+
+    def get_table_query(self):
+        """return (name, select query) of the table selected in the db tree"""
         selitem = self.db_tree.focus()  # get tree item having the focus
         if selitem != "":
             seltag = self.db_tree.item(selitem, "tag")[0]
@@ -1547,13 +1575,12 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                 selitem = self.db_tree.parent(selitem)
             # get final information
             definition, query = self.db_tree.item(selitem, "values")
-            if query != "":  # run the export_csv dialog
-                title = 'Export Table "%s" to ?' % self.db_tree.item(selitem, "text")
-                self.export_csv_dialog(query, title, actions)
+            if query != "":
+                return self.db_tree.item(selitem, "text"), query
+        return None
 
-    def export_csvqr(self):
-        """get tab selected definition and launch cvs export dialog"""
-        actions = [self.conn, self.n]
+    def get_tab_query(self):
+        """return the current script tab selection (or its whole text)"""
         active_tab_id = self.n.notebook.select()
         if active_tab_id != "":  # get current selection (or all)
             fw = self.n.fw_labels[active_tab_id]
@@ -1561,8 +1588,59 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                 query = fw.get("sel.first", "sel.last")
             except:
                 query = fw.get(1.0, END)[:-1]
-            if query != "":
-                self.export_csv_dialog(query, "Export Query", actions)
+            return query
+        return ""
+
+    def export_csvtb(self):
+        """get selected table definition and launch cvs export dialog"""
+        table_query = self.get_table_query()
+        if table_query is not None:
+            title = 'Export Table "%s" to ?' % table_query[0]
+            self.export_csv_dialog(table_query[1], title, [self.conn, self.db_tree])
+
+    def export_csvqr(self):
+        """get tab selected definition and launch cvs export dialog"""
+        query = self.get_tab_query()
+        if query != "":
+            self.export_csv_dialog(query, "Export Query", [self.conn, self.n])
+
+    def copy_query_to_clipboard(self, query, header=True, delimiter="\t"):
+        """run query and place its result in the clipboard as csv text"""
+        buffer = io.StringIO()
+        if self.conn.export_writer(query, buffer,
+                                   header=header, delimiter=delimiter) > 0:
+            self.tk_win.clipboard_clear()
+            self.tk_win.clipboard_append(buffer.getvalue())
+            self.tk_win.update()  # push to the system clipboard now
+
+    def copy_csvtb(self):
+        """get selected table definition and launch copy-to-clipboard dialog"""
+        table_query = self.get_table_query()
+        if table_query is not None:
+            title = 'Copy Table "%s" to Clipboard' % table_query[0]
+            self.copy_csv_dialog(table_query[1], title)
+
+    def copy_csvqr(self):
+        """get tab selected definition and launch copy-to-clipboard dialog"""
+        query = self.get_tab_query()
+        if query != "":
+            self.copy_csv_dialog(query, "Copy Query to Clipboard")
+
+    def copy_csv_dialog(self, query="--", text="Copy to Clipboard"):
+        """copy-to-clipboard dialog : like csv export, minus file and encoding"""
+        fields = [
+            "",
+            ["column separator", ["<TAB>", ",", ";", "|"]],
+            ["Header line", True],
+            "",
+            ["Data to export (MUST be 1 Request)", (query), "w", 100, 10],
+        ]
+        create_dialog(
+            text,
+            fields,
+            (("Copy and close", copy_csv_close_ok), ("Copy", copy_csv_ok)),
+            [self],
+        )
 
     def export_csv_dialog(self, query="--", text="undefined.csv", actions=[]):
         """export csv dialog"""
@@ -1686,11 +1764,11 @@ class NotebookForQueries:
         if not self.use_gui:
             return
         # ensure we work on lists
-        if isinstance(columns, (type("e"), type("e"))):
+        if isinstance(columns, str):
             tree_columns = [columns]
         else:
             tree_columns = columns
-        lines = [data] if isinstance(data, (type("e"), type("e"))) else data
+        lines = [data] if isinstance(data, str) else data
 
         # get back reference to Notebooks of Results
         # (see http://www.astro.washington.edu/users/rowen/TkinterSummary.html)
@@ -1734,14 +1812,14 @@ class NotebookForQueries:
 
         def flat(x):
             """replace line_return by space, if given a string"""
-            if isinstance(x, (type("e"), type("e"))):
+            if isinstance(x, str):
                 return x.replace("\n", " ")
             return x
 
         # feed Treeview Lines
         for items in lines:
             # if line is a string, redo a tuple
-            item = (items,) if isinstance(items, (type("e"), type("e"))) else items
+            item = (items,) if isinstance(items, str) else items
 
             # replace line_return by space (grid don't like line_returns)
             line_cells = tuple(flat(item[c]) for c in range(len(tree_columns)))
@@ -1784,13 +1862,13 @@ class guess_csv:
         self.default_quote = '"'
         self.encodings = guess_encoding(csv_file)
         self.table_name = os.path.basename(csv_file).split(".")[0]
-        with io.open(csv_file, encoding=self.encodings[0]) as f:
+        with open(csv_file, encoding=self.encodings[0]) as f:
             self.preview = f.read(9999)
             try:
                 dialect = csv.Sniffer().sniff(self.preview)
                 self.has_header = csv.Sniffer().has_header(self.preview)
                 self.default_sep = dialect.delimiter
-                self.default_quote = Dialect.quotechar
+                self.default_quote = dialect.quotechar
             except:
                 pass  # sniffer can fail
         self.default_decims = [".", ","]
@@ -1801,22 +1879,13 @@ class guess_csv:
 
 def guess_sql_creation(table_name, separ, decim, header, data, quoter='"'):
     """guess the sql creation request for the table who will receive data"""
-    try:
-        dlines = list(
-            csv.reader(
-                data.replace("\n\n", "\n").splitlines(),
-                delimiter=separ,
-                quotechar=quoter,
-            )
+    dlines = list(
+        csv.reader(
+            data.replace("\n\n", "\n").splitlines(),
+            delimiter=separ,
+            quotechar=quoter,
         )
-    except:  # minimal hack for python2.7
-        dlines = list(
-            csv.reader(
-                data.replace("\n\n", "\n").splitlines(),
-                delimiter=str(separ),
-                quotechar=str(quoter),
-            )
-        )
+    )
     r, val = list(dlines[0]), list(dlines[1])
     typ = ["TEXT"] * len(r)  # default value is TEXT
     for i in range(len(r)):
@@ -1859,7 +1928,7 @@ def guess_sql_creation(table_name, separ, decim, header, data, quoter='"'):
 
 def guess_encoding(csv_file):
     """guess the encoding of the given file"""
-    with io.open(csv_file, "rb") as f:
+    with open(csv_file, "rb") as f:
         data = f.read(5)
     if data.startswith(b"\xEF\xBB\xBF"):  # UTF-8 with a "BOM"
         return ["utf-8-sig"]
@@ -1867,7 +1936,7 @@ def guess_encoding(csv_file):
         return ["utf-16"]
     else:  # in Windows, guessing utf-8 doesn't work, so we have to try
         try:
-            with io.open(csv_file, encoding="utf-8") as f:
+            with open(csv_file, encoding="utf-8") as f:
                 preview = f.read(222222)
                 return ["utf-8"]
         except:
@@ -1879,6 +1948,10 @@ def create_dialog(title, fields_in, buttons, actions):
     # drawing the request form
     top = Toplevel()
     top.title(title)
+    # pop up near the main window (matters on multi-screen setups)
+    top.geometry(
+        "+%d+%d" % (top.master.winfo_rootx() + 60, top.master.winfo_rooty() + 60)
+    )
     top.columnconfigure(0, weight=1)
     top.rowconfigure(0, weight=1)
     # drawing global frame
@@ -1891,18 +1964,18 @@ def create_dialog(title, fields_in, buttons, actions):
     mf_col = -1
     for f in range(len(fields)):  # same structure out
         field = fields[f]
-        if isinstance(field, (type("e"), type("e"))) or mf_col == -1:
+        if isinstance(field, str) or mf_col == -1:
             # a new horizontal frame
             mf_col += 1
             ta_col = -1
-            if isinstance(field, (type("e"), type("e"))) and field == "":
+            if isinstance(field, str) and field == "":
                 mf_frame = ttk.Frame(content, borderwidth=1)
             else:
                 mf_frame = ttk.LabelFrame(content, borderwidth=1, text=field)
             mf_frame.grid(column=0, row=mf_col, sticky="nsew")
             Grid.rowconfigure(mf_frame, 0, weight=1)
             content.rowconfigure(mf_col, weight=1)
-        if not isinstance(field, (type("e"), type("e"))):
+        if not isinstance(field, str):
             # a new vertical frame
             ta_col += 1
             Grid.columnconfigure(mf_frame, ta_col, weight=1)
@@ -1969,19 +2042,24 @@ def create_dialog(title, fields_in, buttons, actions):
                     name.current(0)
                 name.grid(column=1, row=0, sticky="nsw", pady=0, padx=10)
                 fields[f][1] = name_var.get
-    # adding button below the same way
+    # adding buttons below the same way : one ("label", action) pair,
+    # or a tuple of such pairs ; a "Cancel" button is always appended
+    if isinstance(buttons[0], str):
+        buttons = (buttons,)
     mf_col += 1
     packing_frame = ttk.LabelFrame(content, borderwidth=5)
     packing_frame.grid(column=0, row=mf_col, sticky="nsew")
-    okbutton = ttk.Button(
-        packing_frame,
-        text=buttons[0],
-        command=lambda a=top, b=fields, c=actions: (buttons[1])(a, b, c),
-    )
+    col = 0
+    for label, action in buttons:
+        ttk.Button(
+            packing_frame,
+            text=label,
+            command=lambda a=top, b=fields, c=actions, f=action: f(a, b, c),
+        ).grid(column=col, row=mf_col)
+        col += 1
     cancelbutton = ttk.Button(packing_frame, text="Cancel", command=top.destroy)
-    okbutton.grid(column=0, row=mf_col)
-    cancelbutton.grid(column=1, row=mf_col)
-    for x in range(3):
+    cancelbutton.grid(column=col, row=mf_col)
+    for x in range(col + 2):
         Grid.columnconfigure(packing_frame, x, weight=1)
     top.grab_set()
 
@@ -1990,7 +2068,7 @@ def import_csvtb_ok(thetop, entries, actions):
     """read input values from tk formular"""
     conn, actualize_db = actions
     # build dico of result
-    d = {f[0]: f[1]() for f in entries if not isinstance(f, (type("e"), type("e")))}
+    d = {f[0]: f[1]() for f in entries if not isinstance(f, str)}
     # affect to variables
     csv_file = d["csv Name"].strip()
     table_name = d["table Name"].strip()
@@ -2025,33 +2103,41 @@ def import_csvtb_ok(thetop, entries, actions):
 
 def read_this_csv(csv_file, encoding, delimiter, quotechar, header, decim):
     """yield csv data records from a file"""
-    # handle Python 2/3
-    try:
-        reader = csv.reader(
-            open(csv_file, "r", encoding=encoding),
-            delimiter=delimiter,
-            quotechar=quotechar,
-        )
-    except:  # minimal hack for 2.7
-        reader = csv.reader(
-            open(csv_file, "r"), delimiter=str(delimiter), quotechar=str(quotechar)
-        )
-    # handle header
-    if header:
-        next(reader)
-    # otherwise handle special decimal treatment
-    for row in reader:
-        if decim != "." and not isinstance(row, (type("e"), type("e"))):
-            for i in range(len(row)):
-                row[i] = row[i].replace(decim, ".")
-        yield (row)
+    with open(csv_file, "r", encoding=encoding, newline="") as f:
+        reader = csv.reader(f, delimiter=delimiter, quotechar=quotechar)
+        # handle header
+        if header:
+            next(reader)
+        # otherwise handle special decimal treatment
+        for row in reader:
+            if decim != "." and not isinstance(row, str):
+                for i in range(len(row)):
+                    row[i] = row[i].replace(decim, ".")
+            yield (row)
+
+
+def copy_csv_close_ok(thetop, entries, actions):
+    "copy a query result to the clipboard, then close the dialog (action)"
+    copy_csv_ok(thetop, entries, actions)
+    thetop.destroy()
+
+
+def copy_csv_ok(thetop, entries, actions):
+    "copy a query result to the clipboard (action)"
+    d = {f[0]: f[1]() for f in entries if not isinstance(f, str)}
+    separ = "\t" if d["column separator"] == "<TAB>" else d["column separator"]
+    actions[0].copy_query_to_clipboard(
+        d["Data to export (MUST be 1 Request)"],
+        header=d["Header line"],
+        delimiter=separ,
+    )
 
 
 def export_csv_ok(thetop, entries, actions):
     "export a csv table (action)"
     conn = actions[0]
     # build dico of result
-    d = {f[0]: f[1]() for f in entries if not isinstance(f, (type("e"), type("e")))}
+    d = {f[0]: f[1]() for f in entries if not isinstance(f, str)}
 
     csv_file = d["csv Name"].strip()
     conn.export_writer(
@@ -2532,34 +2618,23 @@ class Baresql:
             ):
                 return -1
         nb_columns = len(cursor.description)
-        # with PyPy, the "with io.open" for is more than necessary
-        if sys.version_info[0] != 2:  # python3
+
+        def write_rows(fout):
+            writer = csv.writer(
+                fout, delimiter=delimiter, quotechar=quotechar, quoting=csv.QUOTE_MINIMAL
+            )
+            if header:
+                writer.writerow(
+                    [i if isinstance(i, str) else i[0] for i in cursor.description]
+                )  # PyPy as a strange list of list
+            writer.writerows(cursor.fetchall())
+
+        if hasattr(csv_file, "write"):  # file-like target (e.g. clipboard buffer)
+            write_rows(csv_file)
+        else:
             write_mode = "w" if initialize else "a"  # Write or Append
-            with io.open(csv_file, write_mode, newline="", encoding=encoding) as fout:
-                writer = csv.writer(
-                    fout, delimiter=delimiter, quotechar='"', quoting=csv.QUOTE_MINIMAL
-                )
-                if header:
-                    writer.writerow(
-                        [i if isinstance(i, str) else i[0] for i in cursor.description]
-                    )  # PyPy as a strange list of list
-                writer.writerows(cursor.fetchall())
-                fout.close  # PyPy3-7.3.5 needs that close
-        else:  # python2.7 (minimal)
-            write_mode = "wb" if initialize else "ab"  # Write or Append
-            with io.open(csv_file, write_mode) as fout:
-                writer = csv.writer(
-                    fout,
-                    delimiter=str(delimiter),
-                    quotechar=str('"'),
-                    quoting=csv.QUOTE_MINIMAL,
-                )
-                if header:
-                    writer.writerow(
-                        [i if isinstance(i, str) else i[0] for i in cursor.description]
-                    )  # heading row with anti-PyPy bug
-                writer.writerows(cursor.fetchall())
-                fout.close  # PyPy3-7.3.5 needs that close
+            with open(csv_file, write_mode, newline="", encoding=encoding) as fout:
+                write_rows(fout)
         return nb_columns
 
 
@@ -2590,7 +2665,8 @@ pydef py_fib(n):
    return("%s" % fib(n*1));
 
 -- to USE a python embedded function and nesting of embedded functions:
-select py_hello(), py_fib(6) as fibonacci, sqlite_version();
+select py_hello(), py_fib(6) as fibonacci, sqlite_version(),
+       time('now', 'localtime') t, datetime('now', 'localtime') dt;
 \n-- to EXPORT :
 --    a TABLE, select TABLE, then click on icon 'SQL->CSV'
 --    a QUERY RESULT, select the SCRIPT text, then click on icon '???->CSV',
@@ -2641,62 +2717,56 @@ CREATE TABLE toto.new_item as select * from "main"."item";
 .dump
 """
 
-    if "argparse" in globals():  # not before Python-3.2
-        parser = argparse.ArgumentParser(
-            description="sqlite_bro : a graphic SQLite and DuckDB browser"
-            " in 1 Python file"
-        )
-        parser.add_argument(
-            "-q", "--quiet", action="store_true", help="do not launch the gui"
-        )
-        parser.add_argument(
-            "-w",
-            "--wait",
-            action="store_true",
-            help="wait the user to launch the scripts",
-        )
-        parser.add_argument(
-            "-db",
-            "--database",
-            default=":memory:",
-            type=str,
-            help="specify initial Database if not ':memory:'"
-            " (a .duckdb/.ddb extension selects the DuckDB engine)",
-        )
-        parser.add_argument(
-            "-sc", "--scripts", type=str, help="qive a list of initial scripts"
-        )
-        args = parser.parse_args()
+    parser = argparse.ArgumentParser(
+        description="sqlite_bro : a graphic SQLite and DuckDB browser"
+        " in 1 Python file"
+    )
+    parser.add_argument(
+        "-q", "--quiet", action="store_true", help="do not launch the gui"
+    )
+    parser.add_argument(
+        "-w",
+        "--wait",
+        action="store_true",
+        help="wait the user to launch the scripts",
+    )
+    parser.add_argument(
+        "-db",
+        "--database",
+        default=":memory:",
+        type=str,
+        help="specify initial Database if not ':memory:'"
+        " (a .duckdb/.ddb extension selects the DuckDB engine)",
+    )
+    parser.add_argument(
+        "-sc", "--scripts", type=str, help="qive a list of initial scripts"
+    )
+    args = parser.parse_args()
 
-        if args.quiet:
-            app = App(use_gui=False)
-        else:
-            app = App(use_gui=True)
-        # start with a memory Database and a welcome
-        app.new_db(":memory:")
-        if args.database:
-            app.open_db(args.database)
-        if args.scripts:
-            if isinstance(args.scripts, str):
-                scripts = [args.scripts, "", ""]
-            else:
-                scripts = args.scripts
-            for script in scripts:
-                if os.path.isfile(script):
-                    with io.open(script, encoding=guess_encoding(script)[0]) as f:
-                        welcome_text = f.read()
-                        app.n.new_query_tab("Welcome", welcome_text)
-                        if not args.wait:
-                            app.run_tab()
-        elif app.conn.engine != "duckdb":  # duckdb welcome tab auto-shows
-            app.n.new_query_tab("Welcome", welcome_text)
-        if args.quiet:
-            app.close_db
+    if args.quiet:
+        app = App(use_gui=False)
     else:
         app = App(use_gui=True)
-        # start with a memory Database and a welcome
-        app.new_db(":memory:")
+    # start with a memory Database and a welcome
+    app.new_db(":memory:")
+    if args.database:
+        app.open_db(args.database)
+    if args.scripts:
+        if isinstance(args.scripts, str):
+            scripts = [args.scripts, "", ""]
+        else:
+            scripts = args.scripts
+        for script in scripts:
+            if os.path.isfile(script):
+                with open(script, encoding=guess_encoding(script)[0]) as f:
+                    welcome_text = f.read()
+                    app.n.new_query_tab("Welcome", welcome_text)
+                    if not args.wait:
+                        app.run_tab()
+    elif app.conn.engine != "duckdb":  # duckdb welcome tab auto-shows
         app.n.new_query_tab("Welcome", welcome_text)
+    if args.quiet:
+        app.close_db
     if app.use_gui:
         app.tk_win.mainloop()
 
