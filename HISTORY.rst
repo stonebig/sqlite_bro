@@ -1,6 +1,16 @@
 Changelog
 =========
 
+(unreleased) : v1.1.1
+---------------------
+
+* packaging : PyPI page links refreshed : Documentation link fixed, Changelog / Homepage / Issue Tracker links added
+
+* CI : actions/checkout bumped to v5 and actions/setup-python to v6 (Node 24, removes the Node 20 deprecation warning)
+
+* tests : widget-driving tests are skipped when no display is available (App() falls back to no-GUI) ; they still run in the Xvfb step
+
+
 2026-07-15 : v1.1.0 'Trust me up !'
 -----------------------------------
 
