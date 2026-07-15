@@ -6,6 +6,9 @@ import tempfile
 import io
 from sqlite_bro import sqlite_bro
 app = sqlite_bro.App()
+# without a display (headless CI), App() falls back to use_gui=False :
+# tests that drive real widgets must then be skipped (they run under Xvfb)
+needs_gui = pytest.mark.skipif(not app.use_gui, reason="no display")
 def test_DeBase():
     "learning the ropes"
     assert 1 == 1
@@ -68,6 +71,7 @@ select * from item;
         assert result[3] == "DS!Citroën\n"
 
 
+@needs_gui
 def test_TabClickOutsideLabels():
     "clicking a notebook outside any tab label must not raise TclError"
     from types import SimpleNamespace
@@ -82,6 +86,7 @@ def test_TabClickOutsideLabels():
     app.close_db
 
 
+@needs_gui
 def test_GridCopyFilter(monkeypatch):
     "Ctrl+c copy and Ctrl+f regex filter on a results treeview"
     from tkinter import ttk
