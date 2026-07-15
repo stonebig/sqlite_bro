@@ -1,6 +1,18 @@
 Changelog
 =========
 
+2026-07-15 : v1.1.0 'Trust me up !'
+-----------------------------------
+
+* results grid : Ctrl+c copies the header + selected rows (or all) to the clipboard, tab-separated, no dialog
+
+* results grid : Ctrl+f filters rows with a regular expression ; the grid title shows '(x out of N lines, filter= p)'
+
+* publishing to PyPI is now done by GitHub Actions trusted publishing, on 'v*' tag push (no API token involved)
+
+* fix : clicking a notebook outside the tab labels no longer raises a TclError in the console
+
+
 2026-07-14 : v1.0.0 'Clip me down !'
 -------------------------------------
 
