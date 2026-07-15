@@ -66,3 +66,43 @@ select * from item;
         assert result[1] == "DS;Citroën\n"
         assert result[2] == "ItemNo!Description\n"
         assert result[3] == "DS!Citroën\n"
+
+
+def test_GridCopyFilter(monkeypatch):
+    "Ctrl+c copy and Ctrl+f regex filter on a results treeview"
+    from tkinter import ttk
+
+    app.new_db(":memory:")
+    tab_id = app.n.new_query_tab("Grid", "")
+    app.n.add_treeview(tab_id, ("a", "b"), [(1, "Ford"), (2, "Citroën")], "t")
+
+    def find_tree(w):
+        for c in w.winfo_children():
+            if isinstance(c, ttk.Treeview) and tuple(c["columns"]) == ("a", "b"):
+                return c
+            found = find_tree(c)
+            if found is not None:
+                return found
+
+    tree = find_tree(app.tk_win)
+    assert tree is not None
+
+    # copy with no selection : header + all rows, tab-separated
+    app.n.copy_rows(tree)
+    assert app.tk_win.clipboard_get() == "A\tB\n1\tFord\n2\tCitroën"
+
+    # copy a multi-selection : only those rows
+    tree.selection_set(tree.get_children()[:1])
+    app.n.copy_rows(tree)
+    assert app.tk_win.clipboard_get() == "A\tB\n1\tFord"
+
+    # regex filter, case-insensitive ; empty pattern restores all rows
+    monkeypatch.setattr(sqlite_bro.simpledialog, "askstring",
+                        lambda *a, **k: "citro")
+    app.n.filter_rows(tree)
+    assert len(tree.get_children()) == 1
+    monkeypatch.setattr(sqlite_bro.simpledialog, "askstring",
+                        lambda *a, **k: "")
+    app.n.filter_rows(tree)
+    assert len(tree.get_children()) == 2
+    app.close_db

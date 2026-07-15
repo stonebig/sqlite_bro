@@ -18,13 +18,14 @@ import locale
 import csv
 import datetime
 import io
+import re
 import shlex  # Simple lexical analysis
 from os.path import expanduser
 import tempfile as tmpf
 import subprocess
 
 from tkinter import *
-from tkinter import font, ttk, filedialog, messagebox
+from tkinter import font, ttk, filedialog, messagebox, simpledialog
 from tkinter.ttk import *
 
 tipwindow = None
@@ -1777,7 +1778,7 @@ class NotebookForQueries:
         # create a Labelframe to contain new resultset and scrollbars
         f2 = ttk.Labelframe(
             fw_result_nb,
-            text=("(%s lines) %s" % (len(lines), subt)),
+            text=("(%s lines) %s   [Ctrl+c copy, Ctrl+f filter]" % (len(lines), subt)),
             width=200,
             height=100,
         )
@@ -1791,6 +1792,8 @@ class NotebookForQueries:
         fw_Box = Treeview(
             f2, columns=tree_columns, show="headings", padding=(2, 2, 2, 2)
         )
+        fw_Box.bind("<Control-c>", lambda e: self.copy_rows(e.widget))
+        fw_Box.bind("<Control-f>", lambda e: self.filter_rows(e.widget))
         fw_vsb = Scrollbar(f2, orient="vertical", command=fw_Box.yview)
         fw_hsb = Scrollbar(f2, orient="horizontal", command=fw_Box.xview)
         fw_Box.configure(yscrollcommand=fw_vsb.set, xscrollcommand=fw_hsb.set)
@@ -1836,6 +1839,35 @@ class NotebookForQueries:
                         fw_Box.column(tree_columns[indx], width=ilen)
                 except:
                     pass
+
+    def copy_rows(self, tree):
+        """Ctrl+c : copy header + selected rows (or all) as tab-separated text"""
+        rows = tree.selection() or tree.get_children()
+        text = "\t".join(tree.heading(c, "text") for c in tree["columns"])
+        for iid in rows:
+            text += "\n" + "\t".join(str(v) for v in tree.item(iid)["values"])
+        tree.clipboard_clear()
+        tree.clipboard_append(text)
+
+    def filter_rows(self, tree):
+        """Ctrl+f : show only rows with a cell matching a regex (empty = all)"""
+        pattern = simpledialog.askstring(
+            "Filter rows", "regular expression :", parent=tree
+        )
+        if pattern is None:
+            return
+        if not hasattr(tree, "initial_rows"):
+            tree.initial_rows = tree.get_children()  # remember full set once
+        try:
+            regex = re.compile(pattern, re.IGNORECASE)
+        except re.error:
+            return
+        for iid in tree.initial_rows:
+            row = "\t".join(str(v) for v in tree.item(iid)["values"])
+            if regex.search(row):
+                tree.reattach(iid, "", "end")
+            else:
+                tree.detach(iid)
 
     def sortby(self, tree, col, descending):
         """Sort a ttk treeview contents when a column is clicked on."""
