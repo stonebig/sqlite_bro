@@ -101,8 +101,11 @@ def test_GridCopyFilter(monkeypatch):
                         lambda *a, **k: "citro")
     app.n.filter_rows(tree)
     assert len(tree.get_children()) == 1
+    assert tree.master.cget("text").startswith(
+        "(1 out of 2 lines, filter= citro)")
     monkeypatch.setattr(sqlite_bro.simpledialog, "askstring",
                         lambda *a, **k: "")
     app.n.filter_rows(tree)
     assert len(tree.get_children()) == 2
+    assert tree.master.cget("text").startswith("(2 lines)")
     app.close_db

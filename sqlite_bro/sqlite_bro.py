@@ -1858,6 +1858,7 @@ class NotebookForQueries:
             return
         if not hasattr(tree, "initial_rows"):
             tree.initial_rows = tree.get_children()  # remember full set once
+            tree.initial_title = tree.master.cget("text")
         try:
             regex = re.compile(pattern, re.IGNORECASE)
         except re.error:
@@ -1868,6 +1869,16 @@ class NotebookForQueries:
                 tree.reattach(iid, "", "end")
             else:
                 tree.detach(iid)
+        # reflect the filter in the frame title : (x out of N lines, filter= p)
+        title = tree.initial_title
+        if pattern != "":
+            title = "(%s out of %s lines, filter= %s)%s" % (
+                len(tree.get_children()),
+                len(tree.initial_rows),
+                pattern,
+                tree.initial_title.split(")", 1)[1],
+            )
+        tree.master.configure(text=title)
 
     def sortby(self, tree, col, descending):
         """Sort a ttk treeview contents when a column is clicked on."""
