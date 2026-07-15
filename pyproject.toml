@@ -29,8 +29,11 @@ description="a graphic SQLite and DuckDB Client in 1 Python file"
 keywords = ["sqlite", "duckdb", "gui", "ttk", "sql"]
 
 [project.urls]
-Documentation = "https://github.com/stonebig/sqlite_bro/README.rst"
+Homepage = "https://github.com/stonebig/sqlite_bro"
+Documentation = "https://github.com/stonebig/sqlite_bro/blob/master/README.rst"
+Changelog = "https://github.com/stonebig/sqlite_bro/blob/master/HISTORY.rst"
 Source = "https://github.com/stonebig/sqlite_bro"
+"Issue Tracker" = "https://github.com/stonebig/sqlite_bro/issues"
 
 [project.scripts]
 sqlite_bro = "sqlite_bro.sqlite_bro:_main"
