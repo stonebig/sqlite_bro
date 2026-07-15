@@ -68,6 +68,20 @@ select * from item;
         assert result[3] == "DS!Citroën\n"
 
 
+def test_TabClickOutsideLabels():
+    "clicking a notebook outside any tab label must not raise TclError"
+    from types import SimpleNamespace
+
+    app.new_db(":memory:")
+    app.n.new_query_tab("T1", "select 1")
+    event = SimpleNamespace(x=5000, y=5000, widget=app.n.notebook)
+    app.btn_press(event)      # used to raise: expected integer but got ""
+    app.btn_Movex(event)
+    app.btn_release(event)
+    app.btn_presstwice(event)
+    app.close_db
+
+
 def test_GridCopyFilter(monkeypatch):
     "Ctrl+c copy and Ctrl+f regex filter on a results treeview"
     from tkinter import ttk

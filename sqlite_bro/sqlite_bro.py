@@ -882,7 +882,10 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
         """double-click on a tab definition to change label"""
         x, y, widget = event.x, event.y, event.widget
         elem = widget.identify(x, y)
-        index = widget.index("@%d,%d" % (x, y))
+        try:
+            index = widget.index("@%d,%d" % (x, y))
+        except TclError:
+            return  # click landed outside any tab label
         titre = widget.tab(index, "text")
         # determine selected table
         actions = [widget, index]
@@ -899,12 +902,14 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
         """button press over a widget with a 'close' element"""
         x, y, widget = event.x, event.y, event.widget
         elem = widget.identify(x, y)  # widget is the notebook
-        if "close" in elem:  # close button function
+        try:
             index = widget.index("@%d,%d" % (x, y))
+        except TclError:
+            return  # click landed outside any tab label
+        if "close" in elem:  # close button function
             widget.state(["pressed"])
             widget.pressed_index = index
         else:  # move function
-            index = widget.index("@%d,%d" % (x, y))
             self.state_drag = True
             self.state_drag_widgetid = widget.tabs()[index]
             self.state_drag_index = index
@@ -913,7 +918,10 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
         """make the tab follows if button is pressed and mouse moves"""
         x, y, widget = event.x, event.y, event.widget
         elem = widget.identify(x, y)
-        index = widget.index("@%d,%d" % (x, y))
+        try:
+            index = widget.index("@%d,%d" % (x, y))
+        except TclError:
+            return  # cursor is outside any tab label
         if self.state_drag:
             if self.state_drag_index != index:
                 self.btn_Move(widget, self.state_drag_index, index)
@@ -937,7 +945,10 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
         elem = widget.identify(x, y)
         index = self.state_drag_index
         if "close" in elem or "label" in elem:
-            index = widget.index("@%d,%d" % (x, y))
+            try:
+                index = widget.index("@%d,%d" % (x, y))
+            except TclError:
+                return  # release landed outside any tab label
         if "close" in elem and widget.instate(["pressed"]):
             if widget.pressed_index == index:
                 widget.forget(index)
