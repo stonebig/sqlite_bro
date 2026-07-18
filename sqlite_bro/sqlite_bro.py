@@ -106,6 +106,17 @@ class App:
 
         # Do we use a GUI ?
         self.use_gui = use_gui  # gui ok by default
+        if self.use_gui and os.name == "nt":
+            # tell Windows we are dpi-aware, so it doesn't bitmap-stretch
+            # (blur) the interface on high-dpi screens
+            try:
+                from ctypes import windll
+                try:
+                    windll.shcore.SetProcessDpiAwareness(1)  # Windows 8.1+
+                except Exception:
+                    windll.user32.SetProcessDPIAware()  # older Windows
+            except Exception:
+                pass
         try:
             self.tk_win = Tk()
         except:
