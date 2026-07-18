@@ -129,7 +129,17 @@ class App:
                 + ")"
             )
             self.tk_win.option_add("*tearOff", FALSE)  # hint of tk documentation
-            self.tk_win.minsize(600, 200)  # minimal size
+
+            # high-dpi: how much bigger is this screen than a classic 96 dpi one,
+            # and the nearest integer ratio to enlarge the (bitmap) icons by
+            from fractions import Fraction
+
+            self.dpi_scale = self.tk_win.winfo_fpixels("1i") / 96.0
+            zoom = Fraction(round(self.dpi_scale * 96), 96).limit_denominator(4)
+            self.icon_zoom = (zoom.numerator, zoom.denominator)
+            self.tk_win.minsize(
+                int(600 * self.dpi_scale), int(200 * self.dpi_scale)
+            )  # minimal size
 
             self.font_size = 10
             self.font_wheight = 0
@@ -139,6 +149,8 @@ class App:
 
             # Create style "ButtonNotebook"
             self.create_style()
+            # adjust Treeview rows to the real font height (high-dpi screens)
+            self.set_treeview_rowheight()
             # Initiate Drag State
             self.state_drag = False
             self.state_drag_index = 0
@@ -688,6 +700,12 @@ class App:
             default_font.configure(
                 size=self.font_size, weight=ww[self.font_wheight], family=ff
             )
+        self.set_treeview_rowheight()
+
+    def set_treeview_rowheight(self):
+        """fit ttk.Treeview row height to the current font (size and dpi)"""
+        linespace = font.nametofont("TkDefaultFont").metrics("linespace")
+        ttk.Style().configure("Treeview", rowheight=linespace + 4)
 
     def clean_temp(self):
         """clear temp directory"""
@@ -877,7 +895,18 @@ sKDBgwgTKlzIUKEfPw0T/qES8SAViBUL+vmTsSAVjh0H/sEYct/FkgJHojRJMqM9P1VaVrRHE2ZJ
 e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
 """,
         }
-        return {k: PhotoImage(k, data=v) for k, v in icons.items()}
+        num, den = self.icon_zoom
+        if (num, den) == (1, 1):
+            return {k: PhotoImage(k, data=v) for k, v in icons.items()}
+        # high-dpi: enlarge the bitmap icons by num/den to follow the screen
+        # scale, into images keeping the same tk names ("run_img", ...)
+        scaled = {}
+        for k, v in icons.items():
+            raw = PhotoImage(data=v).zoom(num)
+            img = PhotoImage(k)
+            img.tk.call(img, "copy", raw, "-subsample", den, den)
+            scaled[k] = img
+        return scaled
 
     def btn_chg_tab_ok(self, thetop, entries, actions):
         """chg a tab title"""
