@@ -42,10 +42,9 @@ DB_FILETYPES = [
     ("all", "*.*"),
 ]
 
-WELCOME_DUCKDB = """-- DuckDB Memo (Demo = click on green "->" icon)
--- (this database uses the DuckDB engine : SQL is stricter than SQLite)
-\n-- to CREATE tables : column types are mandatory
-DROP TABLE IF EXISTS item; DROP TABLE IF EXISTS part;
+# the create/insert demo shared by the SQLite and DuckDB welcome memos
+# (typed columns and single-quoted literals : valid for both engines)
+WELCOME_CREATE = """DROP TABLE IF EXISTS item; DROP TABLE IF EXISTS part;
 CREATE TABLE item (ItemNo TEXT, Description TEXT, Kg REAL, PRIMARY KEY (ItemNo));
 CREATE TABLE part(ParentNo TEXT, ChildNo TEXT, Description TEXT, Qty_per REAL);
 \n-- to CREATE an index :
@@ -58,7 +57,12 @@ CREATE VIEW v1 as select * from item inner join part as p ON ItemNo=p.ParentNo;
 INSERT INTO item values('T','Ford',1000);
 INSERT INTO item select 'A','Merced',1250 union all select 'W','Wheel',9 ;
 INSERT INTO part select ItemNo,'W','needed',Kg/250 from item where Kg>250;
-\n-- to CREATE a Python embedded function (needs numpy installed),
+"""
+
+WELCOME_DUCKDB = """-- DuckDB Memo (Demo = click on green "->" icon)
+-- (this database uses the DuckDB engine : SQL is stricter than SQLite)
+\n-- to CREATE tables : column types are mandatory
+""" + WELCOME_CREATE + """\n-- to CREATE a Python embedded function (needs numpy installed),
 -- enclose it by "pydef" and ";" :
 pydef py_hello():
     "hello world"
@@ -2896,21 +2900,8 @@ class Baresql:
 def _main():
     welcome_text = """-- SQLite Memo (Demo = click on green "->" and "@" icons)
 -- (tip : open or create a '.duckdb' file to use the DuckDB engine instead)
-\n-- to CREATE a table 'items' and a table 'parts' :
-DROP TABLE IF EXISTS item; DROP TABLE IF EXISTS part;
-CREATE TABLE item (ItemNo, Description,Kg  , PRIMARY KEY (ItemNo));
-CREATE TABLE part(ParentNo, ChildNo , Description TEXT , Qty_per REAL);
-\n-- to CREATE an index :
-DROP INDEX IF EXISTS parts_id1;
-CREATE INDEX parts_id1 ON part(ParentNo Asc, ChildNo Desc);
-\n-- to CREATE a view 'v1':
-DROP VIEW IF EXISTS v1;
-CREATE VIEW v1 as select * from item inner join part as p ON ItemNo=p.ParentNo;
-\n-- to INSERT datas
-INSERT INTO item values("T","Ford",1000);
-INSERT INTO item select "A","Merced",1250 union all select "W","Wheel",9 ;
-INSERT INTO part select ItemNo,"W","needed",Kg/250 from item where Kg>250;
-\n-- to CREATE a Python embedded function, enclose them by "py" and ";" :
+\n-- to CREATE a table 'item' and a table 'part' :
+""" + WELCOME_CREATE + """\n-- to CREATE a Python embedded function, enclose them by "py" and ";" :
 pydef py_hello():
     "hello world"
     return ("Hello, World !");
