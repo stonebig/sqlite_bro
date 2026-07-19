@@ -4,6 +4,16 @@ Changelog
 (unreleased) : v1.1.1
 ---------------------
 
+* high-dpi : the app declares dpi-awareness on Windows : no more blurry rendering on scaled screens (125%/150%/200%)
+
+* high-dpi : icons, Treeview row heights, pane widths and the minimal window size follow the screen scale ; other OSes unchanged (scale never goes below 1)
+
+* window : opens at 80% of the screen instead of an oversized natural request
+
+* shortcuts : Ctrl+Enter runs the script ; Ctrl+mousewheel changes the font size one point at a time
+
+* fix : Treeview rows no longer clip the text when enlarging the font (AA button or Ctrl+mousewheel)
+
 * packaging : PyPI page links refreshed : Documentation link fixed, Changelog / Homepage / Issue Tracker links added
 
 * CI : actions/checkout bumped to v5 and actions/setup-python to v6 (Node 24, removes the Node 20 deprecation warning)

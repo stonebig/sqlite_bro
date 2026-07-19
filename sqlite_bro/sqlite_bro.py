@@ -131,17 +131,27 @@ class App:
             self.tk_win.option_add("*tearOff", FALSE)  # hint of tk documentation
 
             # high-dpi: how much bigger is this screen than a classic 96 dpi one,
-            # and the nearest integer ratio to enlarge the (bitmap) icons by
+            # and the nearest integer ratio to enlarge the (bitmap) icons by.
+            # never below 1: macOS tk reports a 72 dpi baseline, don't shrink
             from fractions import Fraction
 
-            self.dpi_scale = self.tk_win.winfo_fpixels("1i") / 96.0
+            self.dpi_scale = max(1.0, self.tk_win.winfo_fpixels("1i") / 96.0)
             zoom = Fraction(round(self.dpi_scale * 96), 96).limit_denominator(4)
             self.icon_zoom = (zoom.numerator, zoom.denominator)
             self.tk_win.minsize(
                 int(600 * self.dpi_scale), int(200 * self.dpi_scale)
             )  # minimal size
+            # open at 80% of the screen: dpi-aware windows are no longer
+            # bitmap-enlarged by Windows, and the natural (content) size
+            # would not fit the screen anyway
+            self.tk_win.geometry(
+                f"{self.tk_win.winfo_screenwidth() * 4 // 5}"
+                f"x{self.tk_win.winfo_screenheight() * 4 // 5}"
+            )
 
-            self.font_size = 10
+            # start from the real default font size (9 on Windows), so the
+            # first Ctrl+mousewheel zoom moves one point, not two
+            self.font_size = abs(font.nametofont("TkDefaultFont").actual("size")) or 10
             self.font_wheight = 0
             # With a Menubar and Toolbar
             self.create_menu()
@@ -159,15 +169,27 @@ class App:
             p = ttk.Panedwindow(self.tk_win, orient=HORIZONTAL)
             p.pack(fill=BOTH, expand=1)
 
-            f_database = ttk.Labelframe(p, text="Databases", width=200, height=100)
+            f_database = ttk.Labelframe(
+                p,
+                text="Databases",
+                width=int(200 * self.dpi_scale),
+                height=int(100 * self.dpi_scale),
+            )
             p.add(f_database)
-            f_queries = ttk.Labelframe(p, text="Queries", width=200, height=100)
+            f_queries = ttk.Labelframe(
+                p,
+                text="Queries",
+                width=int(200 * self.dpi_scale),
+                height=int(100 * self.dpi_scale),
+            )
             p.add(f_queries)
 
             # build tree view 't' inside the left 'Database' Frame
             self.db_tree = ttk.Treeview(
                 f_database, displaycolumns=[], columns=("detail", "action")
             )
+            # the tree column width is in (dpi-blind) pixels: follow the screen
+            self.db_tree.column("#0", width=int(200 * self.dpi_scale))
             self.db_tree.tag_configure("run")
             self.db_tree.pack(fill=BOTH, expand=1)
 
@@ -176,6 +198,14 @@ class App:
 
             # Bind keyboard shortcuts
             self.tk_win.bind("<F9>", self.run_tab)
+            # Ctrl+Enter runs the script (class binding also eats the line return)
+            self.tk_win.bind_class("Text", "<Control-Return>", self.run_tab_event)
+            # Ctrl+mousewheel zooms the font, wherever the mouse is
+            # (class bindings so the wheel doesn't also scroll; -Button-4/5 is linux)
+            for seq in ("<Control-MouseWheel>", "<Control-Button-4>", "<Control-Button-5>"):
+                for cls in ("Text", "Treeview", "Listbox"):
+                    self.tk_win.bind_class(cls, seq, self.zoom_font)
+                self.tk_win.bind(seq, self.zoom_font)
         else:
             # create a GUI-Less notebook 'n'
             self.n = NotebookForQueries(None, None, [], self.use_gui)
@@ -706,6 +736,23 @@ class App:
         """fit ttk.Treeview row height to the current font (size and dpi)"""
         linespace = font.nametofont("TkDefaultFont").metrics("linespace")
         ttk.Style().configure("Treeview", rowheight=linespace + 4)
+
+    def run_tab_event(self, event=None):
+        """Ctrl+Enter : run the script (without inserting a line return)"""
+        self.run_tab()
+        return "break"
+
+    def zoom_font(self, event=None):
+        """Ctrl+mousewheel : change the font size one point at a time"""
+        up = getattr(event, "num", 0) == 4 or getattr(event, "delta", 0) > 0
+        new_size = max(6, min(32, self.font_size + (1 if up else -1)))
+        if new_size != self.font_size:
+            self.font_size = new_size
+            for typ in font.names(self.tk_win):
+                if str(typ).startswith("Tk"):
+                    font.nametofont(typ).configure(size=self.font_size)
+            self.set_treeview_rowheight()
+        return "break"
 
     def clean_temp(self):
         """clear temp directory"""
@@ -1738,6 +1785,8 @@ class NotebookForQueries:
         if self.use_gui:
             self.tk_win = tk_win
             self.root = root
+            # high-dpi: same screen scale as the main window (never below 1)
+            self.dpi_scale = max(1.0, tk_win.winfo_fpixels("1i") / 96.0)
             self.notebook = Notebook(root, style="ButtonNotebook")  # ttk.
 
             self.fw_labels = {}  # tab_tk_id -> Scripting frame python object
@@ -1761,7 +1810,12 @@ class NotebookForQueries:
         self.notebook.add(fw_welcome, text=(title))
 
         # new "editable" script
-        f1 = ttk.Labelframe(fw_welcome, text="Script", width=200, height=100)
+        f1 = ttk.Labelframe(
+            fw_welcome,
+            text="Script",
+            width=int(200 * self.dpi_scale),
+            height=int(100 * self.dpi_scale),
+        )
         fw_welcome.add(f1)
         fw_label = Text(f1, bd=1, undo=True)
 
@@ -1778,7 +1832,12 @@ class NotebookForQueries:
         self.fw_labels[working_tab_id] = fw_label
 
         # new "Results" Container
-        fr = ttk.Labelframe(fw_welcome, text="Results", width=200, height=100)
+        fr = ttk.Labelframe(
+            fw_welcome,
+            text="Results",
+            width=int(200 * self.dpi_scale),
+            height=int(100 * self.dpi_scale),
+        )
         fw_welcome.add(fr)
 
         # containing a notebook
@@ -1830,8 +1889,8 @@ class NotebookForQueries:
         f2 = ttk.Labelframe(
             fw_result_nb,
             text=("(%s lines) %s   [Ctrl+c copy, Ctrl+f filter]" % (len(lines), subt)),
-            width=200,
-            height=100,
+            width=int(200 * self.dpi_scale),
+            height=int(100 * self.dpi_scale),
         )
         f2.pack(fill="both", expand=True)
         if position != "end" and not fw_result_nb.tabs():
