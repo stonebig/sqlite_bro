@@ -34,6 +34,14 @@ tipwindow = None
 # starting Python-3.13, PEP 667 forces us to us a specific dictionnary pydef_locals instead of locals()
 pydef_locals ={}
 
+# file dialog filter for databases
+DB_FILETYPES = [
+    ("default", "*.db"),
+    ("duckdb", "*.duckdb"),
+    ("other", "*.db*"),
+    ("all", "*.*"),
+]
+
 WELCOME_DUCKDB = """-- DuckDB Memo (Demo = click on green "->" icon)
 -- (this database uses the DuckDB engine : SQL is stricter than SQLite)
 \n-- to CREATE tables : column types are mandatory
@@ -276,19 +284,11 @@ class App:
         self.menu_help.add_command(
             label="about",
             command=lambda: messagebox.showinfo(
-                message="""
-             \nSQLite_bro : a graphic SQLite and DuckDB Client in 1 Python file
-             \nVersion """
-                + self.__version__
-                + " "
-                + self._title
-                + "\n(https://github.com/stonebig/sqlite_bro)"
-                + "\n\nrun by: "
-                + sys.executable
-                + "\n\nhome: "
-                + self.home
-                + "\n\ncurrent directory: "
-                + os.getcwd()
+                message="\nSQLite_bro : a graphic SQLite and DuckDB Client"
+                " in 1 Python file\n\nVersion %s %s"
+                "\n(https://github.com/stonebig/sqlite_bro)"
+                "\n\nrun by: %s\n\nhome: %s\n\ncurrent directory: %s"
+                % (self.__version__, self._title, sys.executable, self.home, os.getcwd())
             ),
         )
 
@@ -307,12 +307,12 @@ class App:
                 lambda x=self: x.n.new_query_tab("___", ""),
                 "Create a new script",
             ),
-            ("csvin_img", self.import_csvtb, "Import a CSV file into a table"),
+            ("csvin_img", self.import_csvtb, "Import a CSV or JSON file into a table"),
             ("clipin_img", self.paste_csvtb, "Import Clipboard into a table"),
-            ("csvex_img", self.export_csvtb, "Export selected table to a CSV file"),
+            ("csvex_img", self.export_csvtb, "Export selected table to a CSV or JSON file"),
             ("clipex_img", self.copy_csvtb, "Export selected table to Clipboard"),
             ("dbdef_img", self.savdb_script, "Save main database as a SQL script"),
-            ("qryex_img", self.export_csvqr, "Export script selection to a CSV file"),
+            ("qryex_img", self.export_csvqr, "Export script selection to a CSV or JSON file"),
             ("qryclip_img", self.copy_csvqr, "Export script selection to Clipboard"),
             (
                 "exe_img",
@@ -347,12 +347,7 @@ class App:
                 initialdir=self.initialdir,
                 defaultextension=".db",
                 title="Define a new database name and location",
-                filetypes=[
-                    ("default", "*.db"),
-                    ("duckdb", "*.duckdb"),
-                    ("other", "*.db*"),
-                    ("all", "*.*"),
-                ],
+                filetypes=DB_FILETYPES,
             )
         if filename != "":
             self.database_file = filename
@@ -375,12 +370,7 @@ class App:
             filename = filedialog.askopenfilename(
                 initialdir=self.initialdir,
                 defaultextension=".db",
-                filetypes=[
-                    ("default", "*.db"),
-                    ("duckdb", "*.duckdb"),
-                    ("other", "*.db*"),
-                    ("all", "*.*"),
-                ],
+                filetypes=DB_FILETYPES,
             )
         if filename != "":
             self.set_initialdir(filename)
@@ -1109,45 +1099,18 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
         )
 
         style.layout("ButtonNotebook", [("ButtonNotebook.client", {"sticky": "nswe"})])
-        style.layout(
-            "ButtonNotebook.Tab",
-            [
-                (
-                    "ButtonNotebook.tab",
-                    {
-                        "sticky": "nswe",
-                        "children": [
-                            (
-                                "ButtonNotebook.padding",
-                                {
-                                    "side": "top",
-                                    "sticky": "nswe",
-                                    "children": [
-                                        (
-                                            "ButtonNotebook.focus",
-                                            {
-                                                "side": "top",
-                                                "sticky": "nswe",
-                                                "children": [
-                                                    (
-                                                        "ButtonNotebook.label",
-                                                        {"side": "left", "sticky": ""},
-                                                    ),
-                                                    (
-                                                        "ButtonNotebook.close",
-                                                        {"side": "left", "sticky": ""},
-                                                    ),
-                                                ],
-                                            },
-                                        )
-                                    ],
-                                },
-                            )
-                        ],
-                    },
-                )
-            ],
-        )
+        # the Tab is a chain tab > padding > focus > (label + close),
+        # built inner-most first
+        layer = [
+            ("ButtonNotebook.label", {"side": "left", "sticky": ""}),
+            ("ButtonNotebook.close", {"side": "left", "sticky": ""}),
+        ]
+        for element in ("focus", "padding", "tab"):
+            options = {"sticky": "nswe", "children": layer}
+            if element != "tab":
+                options["side"] = "top"
+            layer = [("ButtonNotebook." + element, options)]
+        style.layout("ButtonNotebook.Tab", layer)
 
         # make the selected tab easy to spot: dimmed labels for the others,
         # a strong color for the current one (tab backgrounds are drawn by
@@ -1268,6 +1231,13 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                         )
         return [i[1] for i in tables]
 
+    def clean_path(self, filename):
+        """unquote a dot-command file name, and expand a leading '~'"""
+        filename = filename.strip("'").strip('"')
+        if filename.startswith("~"):
+            filename = os.path.join(self.home, filename[1:])
+        return filename
+
     def create_and_add_results(self, instructions, tab_tk_id, limit=-1, log=None):
         """execute instructions and add them to given tab results"""
         a_jouer = self.conn.get_sqlsplit(instructions, remove_comments=False)
@@ -1329,14 +1299,8 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                 dot_result = ""
                 try:
                     if shell_list[0] == ".cd" and len(shell_list) >= 2:
-                        db_file = shell_list[1]
-                        db_file = db_file.strip("'")
-                        db_file = db_file.strip('"')
-                        if (db_file + "z")[0] == "~":
-                            self.current_directory = os.path.join(
-                                self.home, db_file[1:]
-                            )
-                        elif (db_file + "z")[:2] == "..":
+                        db_file = self.clean_path(shell_list[1])
+                        if (db_file + "z")[:2] == "..":
                             self.current_directory = os.path.join(
                                 self.current_directory, db_file
                             )
@@ -1366,12 +1330,9 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                         self.encode_in = "utf-8"
                         if "--bom" in shell_list:  # keep access to the option
                             self.encode_in = "utf-8-sig"
-                        if shell_list[1] == "--bom":
-                            self.output_file = shell_list[2]
-                        else:
-                            self.output_file = shell_list[1]
-                        self.output_file = self.output_file.strip("'")
-                        self.output_file = self.output_file.strip('"')
+                        self.output_file = self.clean_path(
+                            shell_list[2] if shell_list[1] == "--bom" else shell_list[1]
+                        )
                         if (self.output_file + "") == "-x":
                             self.x_mode = True
                             with tmpf.TemporaryFile() as ff:
@@ -1379,10 +1340,6 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                                     delete=False, suffix="_sqlite_bro.csv"
                                 )
                                 self.output_file = ff.name
-                        if (self.output_file + "z")[0] == "~":
-                            self.output_file = os.path.join(
-                                self.home, self.output_file[1:]
-                            )
                         if self.output_file is None or self.output_file == "":
                             self.output_mode, self.init_output = False, False
                     if shell_list[0] == ".print":
@@ -1396,11 +1353,7 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                                 fout.writelines(instru[len(".print") + 1 :] + "\n")
                             self.init_output, self.once_mode = False, False
                     if shell_list[0] == ".import" and len(shell_list) >= 2:
-                        csv_file = shell_list[1]
-                        csv_file = csv_file.strip("'")
-                        csv_file = csv_file.strip('"')
-                        if (csv_file + "z")[0] == "~":
-                            csv_file = os.path.join(self.home, csv_file[1:])
+                        csv_file = self.clean_path(shell_list[1])
                     if (
                         shell_list[0] == ".import"
                         and len(shell_list) >= 2
@@ -1465,11 +1418,7 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                             )
                     if shell_list[0] == ".dump":
                         if len(shell_list) >= 2:
-                            csv_file = shell_list[1]
-                            csv_file = csv_file.strip("'")
-                            csv_file = csv_file.strip('"')
-                            if (csv_file + "z")[0] == "~":
-                                csv_file = os.path.join(self.home, csv_file[1:])
+                            csv_file = self.clean_path(shell_list[1])
                             with open(csv_file, "w", encoding="utf-8") as f:
                                 for line in self.conn.iterdump():
                                     f.write("%s\n" % line)
@@ -1483,11 +1432,7 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                                 position=0,  # keep the "Dump" tab on the left
                             )
                     if shell_list[0] == ".read" and len(shell_list) >= 2:
-                        filename = shell_list[1]
-                        filename = filename.strip("'")
-                        filename = filename.strip('"')
-                        if (filename + "z")[0] == "~":
-                            filename = os.path.join(self.home, filename[1:])
+                        filename = self.clean_path(shell_list[1])
                         with open(
                             filename, encoding=guess_encoding(filename)[0]
                         ) as f:
@@ -1498,23 +1443,17 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                     if shell_list[0] == ".open":
                         self.close_db
                         if len(shell_list) >= 2:
-                            filename = shell_list[1]
-                            if (filename + "z")[0] == "~":
-                                filename = os.path.join(self.home, filename[1:])
+                            filename = self.clean_path(shell_list[1])
                             self.open_db(filename)
                         else:
                             self.new_db(":memory:")
                         self.actualize_db()
                     if shell_list[0] == ".restore" and len(shell_list) >= 2:
-                        filename = shell_list[1]
-                        if (filename + "z")[0] == "~":
-                            filename = os.path.join(self.home, filename[1:])
+                        filename = self.clean_path(shell_list[1])
                         self.restore_main_from(filename)
                         self.actualize_db()
                     if shell_list[0] == ".backup" and len(shell_list) >= 2:
-                        filename = shell_list[1]
-                        if (filename + "z")[0] == "~":
-                            filename = os.path.join(self.home, filename[1:])
+                        filename = self.clean_path(shell_list[1])
                         self.backup_main_to(filename)
                     if shell_list[0] == ".shell" and len(shell_list) >= 2:
                         os.system(instru[len(".print") + 1 :] + "\n")
@@ -1650,28 +1589,15 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
             )
 
         if getattr(self.conn.conn, "isolation_level", None) != isolation:
-            # if we're in 'backward' compatible mode (automatic commit)
+            # 'backward' compatible mode (automatic commit) : end transaction
+            # (engines without .in_transaction just attempt the COMMIT)
             try:
-                if self.conn.conn.in_transaction:  # python 3.2
-                    if not sql_error:
-                        cu.execute("COMMIT;")
-                        if log is not None:  # write to logFile
-                            log.write("\n-------COMMIT;--------\n" % counter)
-                    else:
-                        cu.execute("ROLLBACK;")
+                if getattr(self.conn.conn, "in_transaction", True):
+                    cu.execute("COMMIT;" if not sql_error else "ROLLBACK;")
+                    if not sql_error and log is not None:  # write to logFile
+                        log.write("\n-------COMMIT;--------\n")
             except:
-                if not sql_error:
-                    try:
-                        cu.execute("COMMIT;")
-                        if log is not None:  # write to logFile
-                            log.write("\n-------COMMIT;--------\n" % counter)
-                    except:
-                        pass
-                else:
-                    try:
-                        cu.execute("ROLLBACK;")
-                    except:
-                        pass
+                pass
             self.conn.conn.isolation_level = isolation  # restore standard
 
     def import_csvtb(self, csv_file=None):
