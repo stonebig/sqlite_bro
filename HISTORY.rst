@@ -12,6 +12,8 @@ Changelog
 
 * shortcuts : Ctrl+Enter runs the script ; Ctrl+mousewheel changes the font size one point at a time
 
+* tabs : the selected tab is easier to spot : plain black label, the other tabs dimmed grey
+
 * fix : Treeview rows no longer clip the text when enlarging the font (AA button or Ctrl+mousewheel)
 
 * packaging : PyPI page links refreshed : Documentation link fixed, Changelog / Homepage / Issue Tracker links added

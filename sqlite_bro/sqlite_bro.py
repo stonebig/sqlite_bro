@@ -1108,6 +1108,16 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
             ],
         )
 
+        # make the selected tab easy to spot: dimmed labels for the others,
+        # a strong color for the current one (tab backgrounds are drawn by
+        # the native Windows theme and can't be recolored reliably)
+        style.configure("ButtonNotebook.Tab", foreground="#707070")
+        style.map(
+            "ButtonNotebook.Tab",
+            foreground=[("selected", "#000000")],
+            background=[("selected", "#ffffff")],  # honored on non-native themes
+        )
+
         self.tk_win.bind_class("TNotebook", "<ButtonPress-1>", self.btn_press, True)
         self.tk_win.bind_class("TNotebook", "<ButtonRelease-1>", self.btn_release)
         self.tk_win.bind_class("TNotebook", "<B1-Motion>", self.btn_Movex)
