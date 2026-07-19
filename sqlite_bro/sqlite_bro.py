@@ -18,6 +18,7 @@ import locale
 import csv
 import datetime
 import io
+import json
 import re
 import shlex  # Simple lexical analysis
 from os.path import expanduser
@@ -145,8 +146,11 @@ class App:
             # bitmap-enlarged by Windows, and the natural (content) size
             # would not fit the screen anyway
             self.tk_win.geometry(
-                f"{self.tk_win.winfo_screenwidth() * 4 // 5}"
-                f"x{self.tk_win.winfo_screenheight() * 4 // 5}"
+                "%sx%s"
+                % (
+                    self.tk_win.winfo_screenwidth() * 4 // 5,
+                    self.tk_win.winfo_screenheight() * 4 // 5,
+                )
             )
 
             # start from the real default font size (9 on Windows), so the
@@ -251,6 +255,8 @@ class App:
                 command=lambda: self.new_db(":memory:", engine="duckdb"),
             )
         self.menu.add_command(label="Open Database ...", command=self.open_db)
+        self.menu_recent = Menu(self.menu, postcommand=self.refresh_recent_menu)
+        self.menu.add_cascade(menu=self.menu_recent, label="Open Recent")
         self.menu.add_command(
             label="Open Database ...(legacy auto-commit)",
             command=lambda: self.open_db(""),
@@ -359,6 +365,7 @@ class App:
                 ):
                     os.remove(filename)
             self.conn = Baresql(self.database_file, engine=engine)
+            self.add_recent_db(filename)
             self.show_duckdb_demo()
             self.actualize_db()
 
@@ -379,8 +386,42 @@ class App:
             self.set_initialdir(filename)
             self.database_file = filename
             self.conn = Baresql(self.database_file, engine=engine)
+            self.add_recent_db(filename)
             self.show_duckdb_demo()
             self.actualize_db()
+
+    def recent_dbs(self):
+        """return the list of recently opened databases"""
+        try:
+            with open(
+                os.path.join(self.home, ".sqlite_bro_recent"), encoding="utf-8"
+            ) as f:
+                return [line.strip() for line in f if line.strip()]
+        except (OSError, IOError):
+            return []
+
+    def add_recent_db(self, filename):
+        """remember the ten most recently opened databases"""
+        if filename in ("", ":memory:"):
+            return
+        filename = os.path.abspath(filename)
+        recents = [filename] + [r for r in self.recent_dbs() if r != filename]
+        try:
+            with open(
+                os.path.join(self.home, ".sqlite_bro_recent"), "w", encoding="utf-8"
+            ) as f:
+                f.write("\n".join(recents[:10]))
+        except (OSError, IOError):
+            pass
+
+    def refresh_recent_menu(self):
+        """(re)feed the 'Open Recent' menu, at click time"""
+        self.menu_recent.delete(0, "end")
+        for recent in self.recent_dbs():
+            if os.path.isfile(recent):
+                self.menu_recent.add_command(
+                    label=recent, command=lambda r=recent: self.open_db(r)
+                )
 
     def show_duckdb_demo(self):
         """open the DuckDB welcome demo tab, once, when DuckDB is first used"""
@@ -1360,6 +1401,32 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                         csv_file = csv_file.strip('"')
                         if (csv_file + "z")[0] == "~":
                             csv_file = os.path.join(self.home, csv_file[1:])
+                    if (
+                        shell_list[0] == ".import"
+                        and len(shell_list) >= 2
+                        and csv_file.lower().endswith((".json", ".jsonl", ".ndjson"))
+                    ):  # the file extension decides the format
+                        table_name = json_table_name(csv_file)
+                        if len(shell_list) >= 3:
+                            table_name = shell_list[2]
+                        records = read_this_json(csv_file)
+                        self.conn.insert_reader(
+                            ((json.dumps(r, ensure_ascii=False),) for r in records),
+                            table_name,
+                            'CREATE TABLE "%s" (json TEXT)' % table_name,
+                            create_table=False,
+                            replace=False,
+                        )
+                        dot_result = 'file %s imported in "%s"' % (
+                            csv_file,
+                            table_name,
+                        )
+                        if log is not None:  # write to logFile
+                            log.write(
+                                '-- File %s imported in "%s"\n'
+                                % (csv_file, table_name)
+                            )
+                    elif shell_list[0] == ".import" and len(shell_list) >= 2:
                         guess = guess_csv(csv_file)
                         if len(shell_list) >= 3:
                             guess.table_name = shell_list[2]
@@ -1613,10 +1680,19 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
             csv_file = filedialog.askopenfilename(
                 initialdir=self.initialdir,
                 defaultextension=".db",
-                title="Choose a csv fileto import ",
-                filetypes=[("default", "*.csv"), ("other", "*.txt"), ("all", "*.*")],
+                title="Choose a csv or json file to import ",
+                filetypes=[
+                    ("default", "*.csv"),
+                    ("json", "*.json *.jsonl *.ndjson"),
+                    ("other", "*.txt"),
+                    ("all", "*.*"),
+                ],
             )
-        if csv_file != "":
+        if csv_file != "" and csv_file.lower().endswith(
+            (".json", ".jsonl", ".ndjson")
+        ):  # the file extension decides the format
+            self.import_jsontb(csv_file)
+        elif csv_file != "":
             self.set_initialdir(csv_file)
             # guess all via an object
             guess = guess_csv(csv_file)
@@ -1657,6 +1733,35 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                 ("Import", import_csvtb_ok),
                 actions,
             )
+
+    def import_jsontb(self, json_file):
+        """import a .json (array) or .jsonl file into a 1-column raw table,
+        and propose a first 'shredding' query in a new tab"""
+        self.set_initialdir(json_file)
+        table_name = json_table_name(json_file)
+        if self.conn.engine == "duckdb":
+            # DuckDB reads (and types) json natively : do it in visible sql
+            base = table_name[: -len("_raw")]
+            query = (
+                'CREATE OR REPLACE TABLE "%s" AS\n'
+                "SELECT * FROM read_json_auto('%s');\n"
+                'SELECT * FROM "%s" LIMIT 100;'
+            ) % (base, json_file.replace("'", "''"), base)
+            self.n.new_query_tab("import %s" % base, query)
+            self.run_tab()
+        else:
+            records = read_this_json(json_file)
+            self.conn.insert_reader(
+                ((json.dumps(r, ensure_ascii=False),) for r in records),
+                table_name,
+                'CREATE TABLE "%s" (json TEXT)' % table_name,
+                create_table=True,
+                replace=True,
+            )
+            self.n.new_query_tab(
+                "shred %s" % table_name, shred_query(table_name, records)
+            )
+        self.actualize_db()
 
     def paste_csvtb(self):
         """paste clipboard into a table, via the csv import dialog"""
@@ -2279,6 +2384,38 @@ def read_this_csv(csv_file, encoding, delimiter, quotechar, header, decim):
             yield (row)
 
 
+def read_this_json(json_file):
+    """return the records of a .json (array or object) or .jsonl file"""
+    with open(json_file, encoding="utf-8-sig") as f:
+        if json_file.lower().endswith(".json"):
+            data = json.load(f)
+            return data if isinstance(data, list) else [data]
+        return [json.loads(line) for line in f if line.strip()]
+
+
+def json_table_name(json_file):
+    """a table name from a file name : 'd:/some stuff.json' -> some_stuff_raw"""
+    base = os.path.splitext(os.path.basename(json_file))[0]
+    return re.sub(r"\W", "_", base) + "_raw"
+
+
+def shred_query(table_name, records):
+    """sql proposal shredding a raw json table, from the first record keys"""
+    first = records[0] if records else None
+    if not isinstance(first, dict) or not first:
+        return 'SELECT json FROM "%s";' % table_name
+    cols = ",\n".join(
+        "    json_extract(json, '$.%s') AS \"%s\""
+        % (k if re.match(r"^\w+$", k) else '"' + k + '"', k.replace('"', '""'))
+        for k in first
+    )
+    return (
+        '-- shredding "%s" : keys seen in the first record, edit at will\n'
+        'SELECT\n%s\nFROM "%s";\n'
+        "-- nested data ? see json_each(json, '$.path') and json_tree\n"
+    ) % (table_name, cols, table_name)
+
+
 def copy_csv_close_ok(thetop, entries, actions):
     "copy a query result to the clipboard, then close the dialog (action)"
     copy_csv_ok(thetop, entries, actions)
@@ -2792,12 +2929,41 @@ class Baresql:
                 )  # PyPy as a strange list of list
             writer.writerows(cursor.fetchall())
 
+        def write_json_rows(fout, lines_mode):
+            """one object per row ; a .json array, or .jsonl lines"""
+            cols = [i if isinstance(i, str) else i[0] for i in cursor.description]
+
+            def clean(v):
+                if isinstance(v, (bytes, bytearray)):
+                    return v.decode("utf-8", "replace")
+                if v is None or isinstance(v, (int, float, str)):
+                    return v
+                return str(v)  # datetime, Decimal, uuid, ...
+
+            first = True
+            for row in cursor:
+                record = json.dumps(
+                    dict(zip(cols, [clean(v) for v in row])), ensure_ascii=False
+                )
+                if lines_mode:
+                    fout.write(record + "\n")
+                else:
+                    fout.write(("[\n" if first else ",\n") + record)
+                    first = False
+            if not lines_mode:
+                fout.write("[]" if first else "\n]\n")
+
         if hasattr(csv_file, "write"):  # file-like target (e.g. clipboard buffer)
             write_rows(csv_file)
         else:
             write_mode = "w" if initialize else "a"  # Write or Append
+            target = csv_file.lower()
             with open(csv_file, write_mode, newline="", encoding=encoding) as fout:
-                write_rows(fout)
+                if target.endswith((".json", ".jsonl", ".ndjson")):
+                    # the file extension decides the format : json, not csv
+                    write_json_rows(fout, not target.endswith(".json"))
+                else:
+                    write_rows(fout)
         return nb_columns
 
 

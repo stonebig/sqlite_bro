@@ -4,6 +4,14 @@ Changelog
 (unreleased) : v1.1.1
 ---------------------
 
+* json : the import button also accepts .json / .jsonl files : records land in a 1-column raw table, and a ready-made 'shredding' query tab opens (DuckDB engine : native read_json_auto instead)
+
+* json : exports write json when the file name ends in .json (array) or .jsonl (one object per line) : same buttons, same .once / .output batch commands, the file extension decides the format
+
+* json : .import file.json [table] works in scripts too (batch mode with -sc)
+
+* menu : Database > Open Recent : the ten most recently opened databases
+
 * high-dpi : the app declares dpi-awareness on Windows : no more blurry rendering on scaled screens (125%/150%/200%)
 
 * high-dpi : icons, Treeview row heights, pane widths and the minimal window size follow the screen scale ; other OSes unchanged (scale never goes below 1)
