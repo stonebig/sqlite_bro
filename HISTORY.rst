@@ -1,8 +1,10 @@
 Changelog
 =========
 
-(unreleased) : v1.1.1
----------------------
+2026-07-19 : v1.2.0 'json integration and last opened database !'
+------------------------------------------------------------------
+
+* source diet : same behavior in fewer lines (shared welcome memo blocks, clean_path() helper for the dot-commands, loop-built notebook style) ; fixes on the way : a latent TypeError when logging the final COMMIT, quoted paths now accepted by .open
 
 * json : the import button also accepts .json / .jsonl files : records land in a 1-column raw table, and a ready-made 'shredding' query tab opens (DuckDB engine : native read_json_auto instead)
 

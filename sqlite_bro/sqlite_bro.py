@@ -135,8 +135,8 @@ class App:
 
     def __init__(self, use_gui=True):
         """create a tkk graphic interface with a main window tk_win"""
-        self.__version__ = "1.1.0"
-        self._title = "of 2026-07-15 : 'Trust me up !'"
+        self.__version__ = "1.2.0"
+        self._title = "of 2026-07-19 : 'json integration and last opened database !'"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.initialdir = "."
