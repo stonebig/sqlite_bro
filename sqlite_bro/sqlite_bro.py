@@ -57,12 +57,7 @@ CREATE VIEW v1 as select * from item inner join part as p ON ItemNo=p.ParentNo;
 INSERT INTO item values('T','Ford',1000);
 INSERT INTO item select 'A','Merced',1250 union all select 'W','Wheel',9 ;
 INSERT INTO part select ItemNo,'W','needed',Kg/250 from item where Kg>250;
-"""
-
-WELCOME_DUCKDB = """-- DuckDB Memo (Demo = click on green "->" icon)
--- (this database uses the DuckDB engine : SQL is stricter than SQLite)
-\n-- to CREATE tables : column types are mandatory
-""" + WELCOME_CREATE + """\n-- to CREATE a Python embedded function (needs numpy installed),
+\n-- to CREATE a Python embedded function,
 -- enclose it by "pydef" and ";" :
 pydef py_hello():
     "hello world"
@@ -71,19 +66,13 @@ pydef py_fib(n):
    "fibonacci : example with function call (may only be internal) "
    fib = lambda n: n if n < 2 else fib(n-1) + fib(n-2)
    return("%s" % fib(n*1));
-pydef py_fib_typed(n: int) -> int:
-    "type-annotated pydef : registered natively (faster, typed) "
-    fib = lambda n: n if n < 2 else fib(n-1) + fib(n-2)
-    return fib(n);
-\n-- to USE a python embedded function :
-select py_hello(), py_fib(6) as fibonacci, py_fib_typed(7) as fib_typed,
-       version() as duckdb_version,
-       current_localtime() t, current_localtimestamp() dt;
-\n-- some DuckDB goodies :
-DESCRIBE item;
-SUMMARIZE item;
-select * from duckdb_tables();
-\n-- to use COMMIT and ROLLBACK (DuckDB does not support SAVEPOINT) :
+"""
+
+WELCOME_END = """\n-- to EXPORT :
+--    a TABLE, select TABLE, then click on icon 'SQL->CSV'
+--    a QUERY RESULT, select the SCRIPT text, then click on icon '???->CSV',
+-- example : select the end of this line: SELECT SQLITE_VERSION()
+\n\n-- to use COMMIT and ROLLBACK :
 BEGIN TRANSACTION;
 UPDATE item SET Kg = Kg + 1;
 COMMIT;
@@ -92,18 +81,53 @@ UPDATE item SET Kg = 0;
 select Kg, Description from Item;
 ROLLBACK;
 select Kg, Description from Item;
-\n-- '.' commands understood (same as in SQLite mode, see sqlite demo) :
+
+\n\n-- '.' commands understood:
+-- .backup FILE           Backup DB (default "main") to FILE (if Python>=3.7)
+-- .cd DIRECTORY          Change the working directory to DIRECTORY
+-- .dump ?FILE?           Render database content as SQL (to FILE if specified)
+-- .excel                 Display the output of next command in spreadsheet
+-- .headers on|off        Turn display of headers on or off
+-- .import FILE TABLE     Import data from FILE into TABLE
+--                        (create TABLE only if it doesn't exist, keep existing records)
+-- .once [--bom] FILE     Output of next SQL command to FILE [with utf-8 bom]
+-- .open ?FILE?           Close existing database and reopen FILE
+-- .output ?FILE?         Send output to FILE or stdout if FILE is omitted
+-- .print STRING...       Print literal STRING
+-- .read FILE             Read input from FILE
+-- .restore FILE          Restore DB (default "main") from FILE (if Python>=3.7)
+-- .separator COL         Set column separator in next .once exports (default ,)
+-- .shell CMD ARGS...     Run CMD ARGS... in a system shell
+
 .headers on
 .separator ;
 .once --bom  '~this_file_of result.txt'
 select ItemNo, Description from item order by ItemNo desc;
 .import '~this_file_of result.txt' in_this_table
 .cd ~
-ATTACH 'test.duckdb' as toto;
+ATTACH 'test.db' as toto;
 DROP TABLE IF EXISTS toto.new_item;
 CREATE TABLE toto.new_item as select * from "main"."item";
 .dump
 """
+
+WELCOME_DUCKDB = """-- DuckDB Memo (Demo = click on green "->" icon)
+-- (this database uses the DuckDB engine : SQL is stricter than SQLite)
+\n-- to CREATE tables : column types are mandatory
+""" + WELCOME_CREATE + """
+pydef py_fib_typed(n: int) -> int:
+    "type-annotated pydef : registered natively (faster, typed) "
+    fib = lambda n: n if n < 2 else fib(n-1) + fib(n-2)
+    return fib(n);
+\n-- to USE a python embedded function (require numpy installed for DuckDb):
+select py_hello(),py_fib_typed(7) as fib_typed, version() as duckdb_version;
+
+\n-- some DuckDB goodies :
+DESCRIBE item;
+SUMMARIZE item;
+select * from duckdb_tables();
+
+""" + WELCOME_END.replace('test.db', 'test.duckdb')
 
 
 class App:
@@ -2901,67 +2925,18 @@ def _main():
     welcome_text = """-- SQLite Memo (Demo = click on green "->" and "@" icons)
 -- (tip : open or create a '.duckdb' file to use the DuckDB engine instead)
 \n-- to CREATE a table 'item' and a table 'part' :
-""" + WELCOME_CREATE + """\n-- to CREATE a Python embedded function, enclose them by "py" and ";" :
-pydef py_hello():
-    "hello world"
-    return ("Hello, World !");
-pydef py_fib(n):
-   "fibonacci : example with function call (may only be internal) "
-   fib = lambda n: n if n < 2 else fib(n-1) + fib(n-2)
-   return("%s" % fib(n*1));
-
--- to USE a python embedded function and nesting of embedded functions:
+""" + WELCOME_CREATE + """
+\n-- to USE a python embedded function :
 select py_hello(), py_fib(6) as fibonacci, sqlite_version(),
        time('now', 'localtime') t, datetime('now', 'localtime') dt;
-\n-- to EXPORT :
---    a TABLE, select TABLE, then click on icon 'SQL->CSV'
---    a QUERY RESULT, select the SCRIPT text, then click on icon '???->CSV',
--- example : select the end of this line: SELECT SQLITE_VERSION()
-\n\n-- to use COMMIT and ROLLBACK :
-BEGIN TRANSACTION;
-UPDATE item SET Kg = Kg + 1;
-COMMIT;
-BEGIN TRANSACTION;
-UPDATE item SET Kg = 0;
-select Kg, Description from Item;
-ROLLBACK;
-select Kg, Description from Item;
-\n\n-- to use SAVEPOINT :
+\n-- to use SAVEPOINT :
 SAVEPOINT remember_Neo;  -- create a savepoint
 UPDATE item SET Description = 'Smith'; -- do things
 SELECT ItemNo, Description FROM Item; -- see things done
 ROLLBACK TO SAVEPOINT remember_Neo; -- go back to savepoint state
 SELECT ItemNo, Description FROM Item;  -- see all is back to normal
 RELEASE SAVEPOINT remember_Neo; -- free memory
-
-\n\n-- '.' commands understood:
--- .backup FILE           Backup DB (default "main") to FILE (if Python>=3.7)
--- .cd DIRECTORY          Change the working directory to DIRECTORY
--- .dump ?FILE?           Render database content as SQL (to FILE if specified)
--- .excel                 Display the output of next command in spreadsheet
--- .headers on|off        Turn display of headers on or off
--- .import FILE TABLE     Import data from FILE into TABLE
---                        (create TABLE only if it doesn't exist, keep existing records)
--- .once [--bom] FILE     Output of next SQL command to FILE [with utf-8 bom]
--- .open ?FILE?           Close existing database and reopen FILE
--- .output ?FILE?         Send output to FILE or stdout if FILE is omitted
--- .print STRING...       Print literal STRING
--- .read FILE             Read input from FILE
--- .restore FILE          Restore DB (default "main") from FILE (if Python>=3.7)
--- .separator COL         Set column separator in next .once exports (default ,)
--- .shell CMD ARGS...     Run CMD ARGS... in a system shell
-
-.headers on
-.separator ;
-.once --bom  '~this_file_of result.txt'
-select ItemNo, Description from item order by ItemNo desc;
-.import '~this_file_of result.txt' in_this_table
-.cd ~
-ATTACH 'test.db' as toto;
-DROP TABLE IF EXISTS toto.new_item;
-CREATE TABLE toto.new_item as select * from "main"."item";
-.dump
-"""
+"""+  WELCOME_END
 
     parser = argparse.ArgumentParser(
         description="sqlite_bro : a graphic SQLite and DuckDB browser"
