@@ -1,6 +1,14 @@
 Changelog
 =========
 
+2026-08-04 : v1.3.1 'One statement at a time !'
+------------------------------------------------
+
+* fix : v1.3.0 shipped announcing itself as '1.2.0' in the window title and the about box : the version and the release title live in sqlite_bro.py too, and only sqlite_bro/__init__.py had been bumped
+
+* test : test_version() asserts the two stay equal, so the next release can't drift again
+
+
 2026-08-04 : v1.3.0 'One statement at a time !'
 ------------------------------------------------
 

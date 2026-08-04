@@ -4,11 +4,17 @@ import pathlib
 import tempfile
 
 import io
+import sqlite_bro as sqlite_bro_package
 from sqlite_bro import sqlite_bro
 app = sqlite_bro.App(use_gui=False)
 def test_DeBase():
     "learning the ropes"
     assert 1 == 1
+
+
+def test_version():
+    "the version shown in the window title is the one flit packages"
+    assert app.__version__ == sqlite_bro_package.__version__
 
 
 def test_Basics():
