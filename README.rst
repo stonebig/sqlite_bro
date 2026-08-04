@@ -8,11 +8,11 @@ databases with any basic python installation.
 Features
 --------
 
-* Tabular browsing of a SQLite or DuckDB database
+* Tabular browsing of a SQLite or DuckDB database (needs 'pip install duckdb')
 
-* Optional DuckDB engine : open or create a '.duckdb' file (needs 'pip install duckdb')
+* Import/Export of .csv and .json files with auto-detection
 
-* Import/Export of .csv files with auto-detection
+* Import/Export of clipboard Data (copy / paste)
 
 * Import/Export of .sql script
 
@@ -20,7 +20,7 @@ Features
 
 * Support of sql-embedded Python functions
 
-* support supports command-line scripting if Python>=3.2 (see sqlite_bro -h), with or without Graphic User Interface
+* support supports command-line scripting if Python>=3.3 (see sqlite_bro -h), with or without Graphic User Interface
 
 * Easy to distribute : 1 Python source file, Python and PyPy3 compatible
 
