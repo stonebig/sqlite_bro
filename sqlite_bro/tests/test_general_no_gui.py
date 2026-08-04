@@ -101,7 +101,7 @@ def test_CopyPaste():
 
 
 def test_statement_at():
-    "F5 : find the sql statement a cursor offset falls in"
+    "Ctrl+Shift+Enter : find the sql statement a cursor offset falls in"
     app.new_db(":memory:")
     script = "-- a comment\nselect 1;\n  select 2 ;\n.print hello\nselect 3"
     def at(offset):

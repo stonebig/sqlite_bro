@@ -115,8 +115,8 @@ select Kg, Description from Item;
 -- .restore FILE          Restore DB (default "main") from FILE (if Python>=3.7)
 -- .separator COL         Set column separator in next .once exports (default ,)
 -- .shell CMD ARGS...     Run CMD ARGS... in a system shell
-\n-- keyboard : F5 or Ctrl+Shift+Enter runs the sole statement the cursor is in,
--- F9 or Ctrl+Enter runs the whole script (or just the selected text)
+\n-- keyboard : Ctrl+Shift+Enter (or F5) runs the sole statement the cursor is in,
+-- Ctrl+Enter (or F9) runs the whole script, or just the selected text
 
 .headers on
 .separator ;
@@ -257,12 +257,13 @@ class App:
 
             # Bind keyboard shortcuts
             self.tk_win.bind("<F9>", self.run_tab)
-            # F5 runs only the statement the cursor is in : so does
-            # Ctrl+Shift+Enter, for keyboards where F-keys need an 'Fn' press
-            self.tk_win.bind("<F5>", self.run_statement)
+            # Ctrl+Shift+Enter runs only the statement the cursor is in (class
+            # binding, so it eats the line return). F5 does the same, when the
+            # keyboard has a function row that doesn't need an 'Fn' press
             self.tk_win.bind_class(
                 "Text", "<Control-Shift-Return>", self.run_statement
             )
+            self.tk_win.bind("<F5>", self.run_statement)
             # Ctrl+Enter runs the script (class binding also eats the line return)
             self.tk_win.bind_class("Text", "<Control-Return>", self.run_tab_event)
             # Ctrl+mousewheel zooms the font, wherever the mouse is
@@ -823,7 +824,7 @@ class App:
         return found
 
     def run_statement(self, event=None):
-        """F5 : run only the sql statement the cursor is in"""
+        """Ctrl+Shift+Enter (or F5) : run only the statement the cursor is in"""
         active_tab_id = self.n.notebook.select()
         if active_tab_id != "":
             fw = self.n.fw_labels[active_tab_id]
