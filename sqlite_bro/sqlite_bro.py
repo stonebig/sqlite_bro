@@ -42,6 +42,11 @@ DB_FILETYPES = [
     ("all", "*.*"),
 ]
 
+def temp_csv():
+    """return the name of a fresh temporary .csv file"""
+    return tmpf.NamedTemporaryFile(delete=False, suffix="_sqlite_bro.csv").name
+
+
 # the create/insert demo shared by the SQLite and DuckDB welcome memos
 # (typed columns and single-quoted literals : valid for both engines)
 WELCOME_CREATE = """DROP TABLE IF EXISTS item; DROP TABLE IF EXISTS part;
@@ -1266,6 +1271,130 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
             filename = os.path.join(self.home, filename[1:])
         return filename
 
+    def run_dotcommand(self, instru, tab_tk_id, log=None):
+        """run one sqlite3-cli style '.command' : return (message, status)"""
+        shell_list = shlex.split(instru, posix=False)  # magic standard library
+        cmd, args, result = shell_list[0], shell_list[1:], ""
+        if cmd == ".cd" and args:
+            new_dir = self.clean_path(args[0])
+            if (new_dir + "z")[:2] == "..":
+                self.current_directory = os.path.join(self.current_directory, new_dir)
+            elif (new_dir + "z")[:1] == ".":
+                self.current_directory = os.path.join(
+                    self.current_directory, new_dir[1:]
+                )
+            else:
+                self.current_directory = new_dir
+        # every dot-command runs from (and refreshes) the current directory
+        os.chdir(self.current_directory)
+        self.current_directory = os.getcwd()
+        if cmd == ".headers" and args and args[0].lower() in ("on", "off"):
+            self.default_header = args[0].lower() == "on"
+        elif cmd == ".separator" and args:
+            self.default_separator = args[0]
+        elif cmd in (".once", ".output", ".excel"):
+            if cmd == ".excel":
+                cmd, args = ".once", ["--bom", "-x"]
+            if cmd == ".once":
+                self.once_mode, self.init_output = True, True
+            else:
+                self.output_mode, self.init_output = True, True
+            self.x_mode = False
+            self.encode_in = "utf-8-sig" if "--bom" in args else "utf-8"
+            self.output_file = self.clean_path(
+                args[1] if args[0] == "--bom" else args[0]
+            )
+            if self.output_file == "-x":
+                self.x_mode = True
+                self.output_file = temp_csv()
+            if self.output_file is None or self.output_file == "":
+                self.output_mode, self.init_output = False, False
+        elif cmd == ".print":
+            if self.output_mode or self.once_mode:
+                write_mode = "w" if self.init_output else "a"  # Write or Append
+                with open(
+                    self.output_file, write_mode, encoding=self.encode_in
+                ) as fout:
+                    fout.writelines(instru[len(".print") + 1 :] + "\n")
+                self.init_output, self.once_mode = False, False
+        elif cmd == ".import" and args:
+            csv_file = self.clean_path(args[0])
+            table = args[1] if len(args) >= 2 else ""
+            if csv_file.lower().endswith((".json", ".jsonl", ".ndjson")):
+                # the file extension decides the format
+                table = table if table else json_table_name(csv_file)
+                self.conn.insert_reader(
+                    (
+                        (json.dumps(r, ensure_ascii=False),)
+                        for r in read_this_json(csv_file)
+                    ),
+                    table,
+                    'CREATE TABLE "%s" (json TEXT)' % table,
+                    create_table=False,
+                    replace=False,
+                )
+            else:
+                guess = guess_csv(csv_file)
+                table = table if table else guess.table_name
+                # Create csv reader and give it to import
+                reading = read_this_csv(
+                    csv_file,
+                    guess.encodings[0],
+                    guess.default_sep,
+                    guess.default_quote,
+                    guess.has_header,
+                    guess.default_decims[0],
+                )
+                guess_sql = guess_sql_creation(
+                    table,
+                    guess.default_sep,
+                    ".",
+                    guess.has_header,
+                    guess.dlines,
+                    guess.default_quote,
+                )[0]
+                self.conn.insert_reader(
+                    reading, table, guess_sql, create_table=False, replace=False
+                )
+            result = 'file %s imported in "%s"' % (csv_file, table)
+            if log is not None:  # write to logFile
+                log.write('-- File %s imported in "%s"\n' % (csv_file, table))
+        elif cmd == ".dump":
+            if args:
+                with open(self.clean_path(args[0]), "w", encoding="utf-8") as f:
+                    for line in self.conn.iterdump():
+                        f.write("%s\n" % line)
+            else:
+                self.n.add_treeview(
+                    tab_tk_id,
+                    ("output"),
+                    ([("%s" % line) for line in self.conn.iterdump()]),
+                    "Dump",
+                    ".dump",
+                    position=0,  # keep the "Dump" tab on the left
+                )
+        elif cmd == ".read" and args:
+            filename = self.clean_path(args[0])
+            with open(filename, encoding=guess_encoding(filename)[0]) as f:
+                self.n.new_query_tab(".Read", f.read())
+            self.run_tab()
+            self.actualize_db()
+        elif cmd == ".open":
+            self.close_db
+            if args:
+                self.open_db(self.clean_path(args[0]))
+            else:
+                self.new_db(":memory:")
+            self.actualize_db()
+        elif cmd == ".restore" and args:
+            self.restore_main_from(self.clean_path(args[0]))
+            self.actualize_db()
+        elif cmd == ".backup" and args:
+            self.backup_main_to(self.clean_path(args[0]))
+        elif cmd == ".shell" and args:
+            os.system(instru[len(".print") + 1 :] + "\n")
+        return result, "Ok"
+
     def create_and_add_results(self, instructions, tab_tk_id, limit=-1, log=None):
         """execute instructions and add them to given tab results"""
         a_jouer = self.conn.get_sqlsplit(instructions, remove_comments=False)
@@ -1274,7 +1403,6 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
         # DuckDB connections have no isolation_level attribute
         isolation = getattr(self.conn.conn, "isolation_level", None)
         counter = 0
-        shell_list = ["", ""]
         if isolation == "":  # Sqlite3 and dump.py default don't match
             self.conn.conn.isolation_level = None  # right behavior
         cu = self.conn.conn.cursor()
@@ -1320,172 +1448,12 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                 add_log("python function %s created" % pydef, "Ok", first_line)
                 if log is not None:  # write to logFile
                     log.write("\n".join(['("%s")' % r for r in rows]) + "\n")
-            elif instru[:1] == ".":  # a shell command !
-                # handle a ".function" here !
-                # import FILE TABLE
-                shell_list = shlex.split(instru, posix=False)  # magic standard library
-                dot_result = ""
+            elif instru[:1] == ".":  # a sqlite3-cli style dot-command
                 try:
-                    if shell_list[0] == ".cd" and len(shell_list) >= 2:
-                        db_file = self.clean_path(shell_list[1])
-                        if (db_file + "z")[:2] == "..":
-                            self.current_directory = os.path.join(
-                                self.current_directory, db_file
-                            )
-                        elif (db_file + "z")[:1] == ".":
-                            self.current_directory = os.path.join(
-                                self.current_directory, db_file[1:]
-                            )
-                        else:
-                            self.current_directory = db_file
-                    os.chdir(self.current_directory)
-                    self.current_directory = os.getcwd()
-                    if shell_list[0] == ".headers" and len(shell_list) >= 2:
-                        if shell_list[1].lower() == "off":
-                            self.default_header = False
-                        elif shell_list[1].lower() == "on":
-                            self.default_header = True
-                    if shell_list[0] == ".separator" and len(shell_list) >= 2:
-                        self.default_separator = shell_list[1]
-                    if shell_list[0] in (".once", ".output", ".excel"):
-                        if shell_list[0] == ".excel":
-                            shell_list = [".once", "--bom", "-x"]
-                        if shell_list[0] == ".once":
-                            self.once_mode, self.init_output = True, True
-                        else:
-                            self.output_mode, self.init_output = True, True
-                        self.x_mode = False
-                        self.encode_in = "utf-8"
-                        if "--bom" in shell_list:  # keep access to the option
-                            self.encode_in = "utf-8-sig"
-                        self.output_file = self.clean_path(
-                            shell_list[2] if shell_list[1] == "--bom" else shell_list[1]
-                        )
-                        if (self.output_file + "") == "-x":
-                            self.x_mode = True
-                            with tmpf.TemporaryFile() as ff:
-                                ff = tmpf.NamedTemporaryFile(
-                                    delete=False, suffix="_sqlite_bro.csv"
-                                )
-                                self.output_file = ff.name
-                        if self.output_file is None or self.output_file == "":
-                            self.output_mode, self.init_output = False, False
-                    if shell_list[0] == ".print":
-                        if self.output_mode or self.once_mode:
-                            write_mode = (
-                                "w" if self.init_output else "a"
-                            )  # Write or Append
-                            with open(
-                                self.output_file, write_mode, encoding=self.encode_in
-                            ) as fout:
-                                fout.writelines(instru[len(".print") + 1 :] + "\n")
-                            self.init_output, self.once_mode = False, False
-                    if shell_list[0] == ".import" and len(shell_list) >= 2:
-                        csv_file = self.clean_path(shell_list[1])
-                    if (
-                        shell_list[0] == ".import"
-                        and len(shell_list) >= 2
-                        and csv_file.lower().endswith((".json", ".jsonl", ".ndjson"))
-                    ):  # the file extension decides the format
-                        table_name = json_table_name(csv_file)
-                        if len(shell_list) >= 3:
-                            table_name = shell_list[2]
-                        records = read_this_json(csv_file)
-                        self.conn.insert_reader(
-                            ((json.dumps(r, ensure_ascii=False),) for r in records),
-                            table_name,
-                            'CREATE TABLE "%s" (json TEXT)' % table_name,
-                            create_table=False,
-                            replace=False,
-                        )
-                        dot_result = 'file %s imported in "%s"' % (
-                            csv_file,
-                            table_name,
-                        )
-                        if log is not None:  # write to logFile
-                            log.write(
-                                '-- File %s imported in "%s"\n'
-                                % (csv_file, table_name)
-                            )
-                    elif shell_list[0] == ".import" and len(shell_list) >= 2:
-                        guess = guess_csv(csv_file)
-                        if len(shell_list) >= 3:
-                            guess.table_name = shell_list[2]
-                        # Create csv reader and give it to import
-                        reading = read_this_csv(
-                            csv_file,
-                            guess.encodings[0],
-                            guess.default_sep,
-                            guess.default_quote,
-                            guess.has_header,
-                            guess.default_decims[0],
-                        )
-                        guess_sql = guess_sql_creation(
-                            guess.table_name,
-                            guess.default_sep,
-                            ".",
-                            guess.has_header,
-                            guess.dlines,
-                            guess.default_quote,
-                        )[0]
-                        self.conn.insert_reader(
-                            reading,
-                            guess.table_name,
-                            guess_sql,
-                            create_table=False,
-                            replace=False,
-                        )
-                        dot_result = 'file %s imported in "%s"' % (
-                            csv_file,
-                            guess.table_name,
-                        )
-                        if log is not None:  # write to logFile
-                            log.write(
-                                '-- File %s imported in "%s"\n'
-                                % (csv_file, guess.table_name)
-                            )
-                    if shell_list[0] == ".dump":
-                        if len(shell_list) >= 2:
-                            csv_file = self.clean_path(shell_list[1])
-                            with open(csv_file, "w", encoding="utf-8") as f:
-                                for line in self.conn.iterdump():
-                                    f.write("%s\n" % line)
-                        else:
-                            self.n.add_treeview(
-                                tab_tk_id,
-                                ("output"),
-                                ([("%s" % line) for line in self.conn.iterdump()]),
-                                "Dump",
-                                ".dump",
-                                position=0,  # keep the "Dump" tab on the left
-                            )
-                    if shell_list[0] == ".read" and len(shell_list) >= 2:
-                        filename = self.clean_path(shell_list[1])
-                        with open(
-                            filename, encoding=guess_encoding(filename)[0]
-                        ) as f:
-                            read_this = f.read()
-                        self.n.new_query_tab(".Read", read_this)
-                        self.run_tab()
-                        self.actualize_db()
-                    if shell_list[0] == ".open":
-                        self.close_db
-                        if len(shell_list) >= 2:
-                            filename = self.clean_path(shell_list[1])
-                            self.open_db(filename)
-                        else:
-                            self.new_db(":memory:")
-                        self.actualize_db()
-                    if shell_list[0] == ".restore" and len(shell_list) >= 2:
-                        filename = self.clean_path(shell_list[1])
-                        self.restore_main_from(filename)
-                        self.actualize_db()
-                    if shell_list[0] == ".backup" and len(shell_list) >= 2:
-                        filename = self.clean_path(shell_list[1])
-                        self.backup_main_to(filename)
-                    if shell_list[0] == ".shell" and len(shell_list) >= 2:
-                        os.system(instru[len(".print") + 1 :] + "\n")
-                    add_log(dot_result, "Ok", first_line)
+                    result, status = self.run_dotcommand(
+                        instru, tab_tk_id, log
+                    )
+                    add_log(result, status, first_line)
 
                 except IOError as err:
                     msg = "I/O error: {0}".format(err)
@@ -1522,11 +1490,7 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                             os.system(
                                 "start excel.exe " + self.output_file.replace("\\", "/")
                             )
-                            with tmpf.TemporaryFile() as ff:
-                                ff = tmpf.NamedTemporaryFile(
-                                    delete=False, suffix="_sqlite_bro.csv"
-                                )
-                                self.output_file = ff.name
+                            self.output_file = temp_csv()
                     else:
                         cur = cu.execute(instruction)
                         rows = cur.fetchall()
