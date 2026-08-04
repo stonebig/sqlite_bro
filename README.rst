@@ -48,6 +48,10 @@ Example usage
 
 ::
 
+  $ python -m sqlite_bro
+
+::
+
   $ sqlite_bro
 
 ::

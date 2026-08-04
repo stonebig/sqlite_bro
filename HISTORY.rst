@@ -1,6 +1,14 @@
 Changelog
 =========
 
+2026-08-04 : v1.3.2 'python -m sqlite_bro , at last !'
+------------------------------------------------
+
+* fix : 'python -m sqlite_bro' answered "'sqlite_bro' is a package and cannot be directly executed" : the package had no __main__.py, so the only module form that worked was the redundant 'python -m sqlite_bro.sqlite_bro'
+
+* doc : README.rst shows 'python -m sqlite_bro' among the ways to launch it
+
+
 2026-08-04 : v1.3.1 'One statement at a time !'
 ------------------------------------------------
 

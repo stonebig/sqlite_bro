@@ -154,8 +154,8 @@ class App:
 
     def __init__(self, use_gui=True):
         """create a tkk graphic interface with a main window tk_win"""
-        self.__version__ = "1.3.1"
-        self._title = "of 2026-08-04 : 'One statement at a time !'"
+        self.__version__ = "1.3.2"
+        self._title = "of 2026-08-04 : 'python -m sqlite_bro , at last !'"
         self.conn = None  # Baresql database object
         self.database_file = ""
         self.initialdir = "."
