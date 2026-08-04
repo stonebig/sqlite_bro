@@ -115,6 +115,8 @@ select Kg, Description from Item;
 -- .restore FILE          Restore DB (default "main") from FILE (if Python>=3.7)
 -- .separator COL         Set column separator in next .once exports (default ,)
 -- .shell CMD ARGS...     Run CMD ARGS... in a system shell
+\n-- keyboard : F5 runs the sole statement the cursor is in, F9 (or Ctrl+Enter)
+-- runs the whole script, or just the selected text if there is a selection
 
 .headers on
 .separator ;
@@ -255,6 +257,8 @@ class App:
 
             # Bind keyboard shortcuts
             self.tk_win.bind("<F9>", self.run_tab)
+            # F5 runs only the statement the cursor is in
+            self.tk_win.bind("<F5>", self.run_statement)
             # Ctrl+Enter runs the script (class binding also eats the line return)
             self.tk_win.bind_class("Text", "<Control-Return>", self.run_tab_event)
             # Ctrl+mousewheel zooms the font, wherever the mouse is
@@ -796,6 +800,36 @@ class App:
     def run_tab_event(self, event=None):
         """Ctrl+Enter : run the script (without inserting a line return)"""
         self.run_tab()
+        return "break"
+
+    def statement_at(self, script, offset):
+        """return the sql statement of 'script' the character 'offset' is in"""
+        # get_sqlsplit can drop a separator (a shell order loses what precedes
+        # it), so locate each piece in the script instead of adding up lengths
+        pos, found = 0, ""
+        for statement in self.conn.get_sqlsplit(script, remove_comments=False):
+            start = script.find(statement, pos)
+            if start < 0:
+                break
+            pos = start + len(statement)
+            if statement.strip():
+                found = statement
+            if offset <= pos:  # a cursor right after ';' means that statement
+                break
+        return found
+
+    def run_statement(self, event=None):
+        """F5 : run only the sql statement the cursor is in"""
+        active_tab_id = self.n.notebook.select()
+        if active_tab_id != "":
+            fw = self.n.fw_labels[active_tab_id]
+            statement = self.statement_at(
+                fw.get(1.0, END)[:-1], len(fw.get(1.0, INSERT))
+            )
+            if statement.strip():
+                self.n.remove_treeviews(active_tab_id)
+                self.create_and_add_results(statement, active_tab_id)
+            fw.focus_set()  # workaround bug http://bugs.python.org/issue17511
         return "break"
 
     def zoom_font(self, event=None):

@@ -98,3 +98,21 @@ def test_CopyPaste():
             "select * from from_clipboard order by a").fetchall()
         assert rows == [(1.0, "café"), (2.0, "Citroën")]
     app.close_db
+
+
+def test_statement_at():
+    "F5 : find the sql statement a cursor offset falls in"
+    app.new_db(":memory:")
+    script = "-- a comment\nselect 1;\n  select 2 ;\n.print hello\nselect 3"
+    def at(offset):
+        return app.statement_at(script, offset)
+
+    assert at(0) == at(20) == "-- a comment\nselect 1;"
+    assert at(22) == "-- a comment\nselect 1;"   # right after ';' : that one
+    assert at(30) == "\n  select 2 ;"
+    assert at(40) == ".print hello"              # dot-commands count too
+    assert at(len(script)) == "\nselect 3"       # past the end : the last one
+    assert at(len(script) + 99) == "\nselect 3"
+    assert app.statement_at("", 0) == ""         # nothing to run
+    assert app.statement_at("   \n  ", 3) == ""
+    assert app.statement_at("select 42", 3) == "select 42"
