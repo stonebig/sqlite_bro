@@ -42,6 +42,11 @@ DB_FILETYPES = [
     ("all", "*.*"),
 ]
 
+# the .output/.once settings run_temp() has to save and restore around a run
+OUTPUT_STATE = (
+    "once_mode", "encode_in", "output_file", "init_output", "output_mode", "x_mode"
+)
+
 # the sqlite3-cli style commands a script may use (see App.run_dotcommand)
 DOT_COMMANDS = (
     ".backup", ".cd", ".dump", ".excel", ".headers", ".import", ".once",
@@ -586,8 +591,7 @@ class App:
     def sav_script(self):
         """save a script in a file"""
         active_tab_id = self.n.notebook.select()
-        if active_tab_id != "":
-            # get current selection (or all)
+        if active_tab_id != "":  # the whole script, never just a selection
             fw = self.n.fw_labels[active_tab_id]
             script = fw.get(1.0, END)[:-1]
             filename = filedialog.asksaveasfilename(
@@ -706,21 +710,23 @@ class App:
         if active_tab_id != "":
             # remove previous results
             self.n.remove_treeviews(active_tab_id)
-            # get current selection (or all)
-            fw = self.n.fw_labels[active_tab_id]
-            try:
-                script = fw.get("sel.first", "sel.last")
-            except:
-                script = fw.get(1.0, END)[:-1]
+            fw, script = self.tab_script(active_tab_id)
             self.create_and_add_results(script, active_tab_id)
             fw.focus_set()  # workaround bug http://bugs.python.org/issue17511
+
+    def tab_script(self, active_tab_id):
+        """return a tab text widget and its script : the selection, or all"""
+        fw = self.n.fw_labels[active_tab_id]
+        try:
+            return fw, fw.get("sel.first", "sel.last")
+        except TclError:  # nothing selected
+            return fw, fw.get(1.0, END)[:-1]
 
     def exsav_script(self):
         """write script commands + top results to a log file"""
         # idea from http://blog.mp933.fr/post/2014/05/15/Script-vs.-copy/paste
         active_tab_id = self.n.notebook.select()
-        if active_tab_id != "":
-            # get current selection (or all)
+        if active_tab_id != "":  # the whole script, never just a selection
             fw = self.n.fw_labels[active_tab_id]
             script = fw.get(1.0, END)[:-1]
             filename = filedialog.asksaveasfilename(
@@ -740,38 +746,17 @@ class App:
 
     def run_temp(self):
         """run selected script commands and display results via tmp files"""
-        # backup existing defaults
-        once_mode_bkp = self.once_mode
-        encode_in_bkp = self.encode_in
-        output_file_bkp = self.output_file
-        init_output_bkp = self.init_output
-        output_mode_bkp = self.output_mode
-        x_mode_bkp = self.x_mode
-
+        keep = {k: getattr(self, k) for k in OUTPUT_STATE}  # backup defaults
         active_tab_id = self.n.notebook.select()
         if active_tab_id != "":
             self.n.remove_treeviews(active_tab_id)
-
-        if active_tab_id != "":
-            # get current selection (or all)
-            fw = self.n.fw_labels[active_tab_id]
-            fw = self.n.fw_labels[active_tab_id]
-            try:
-                query = fw.get("sel.first", "sel.last")
-            except:
-                query = fw.get(1.0, END)[:-1]
-            query = "\n.output --bom -x \n" + query
-            # print("run temp", query)
-            self.create_and_add_results(query, active_tab_id)
+            fw, query = self.tab_script(active_tab_id)
+            self.create_and_add_results(
+                "\n.output --bom -x \n" + query, active_tab_id
+            )
             fw.focus_set()  # workaround bug http://bugs.python.org/issue17511
-
-        # restore previous defaults
-        self.once_mode = once_mode_bkp
-        self.encode_in = encode_in_bkp
-        self.output_file = output_file_bkp
-        self.init_output = init_output_bkp
-        self.output_mode = output_mode_bkp
-        self.x_mode = x_mode_bkp
+        for k, v in keep.items():  # restore previous defaults
+            setattr(self, k, v)
 
     def chg_fontsize(self):
         """change the display font size"""
@@ -1727,13 +1712,8 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
     def get_tab_query(self):
         """return the current script tab selection (or its whole text)"""
         active_tab_id = self.n.notebook.select()
-        if active_tab_id != "":  # get current selection (or all)
-            fw = self.n.fw_labels[active_tab_id]
-            try:
-                query = fw.get("sel.first", "sel.last")
-            except:
-                query = fw.get(1.0, END)[:-1]
-            return query
+        if active_tab_id != "":
+            return self.tab_script(active_tab_id)[1]
         return ""
 
     def export_csvtb(self):
