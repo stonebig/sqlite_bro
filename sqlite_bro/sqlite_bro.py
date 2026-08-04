@@ -115,8 +115,8 @@ select Kg, Description from Item;
 -- .restore FILE          Restore DB (default "main") from FILE (if Python>=3.7)
 -- .separator COL         Set column separator in next .once exports (default ,)
 -- .shell CMD ARGS...     Run CMD ARGS... in a system shell
-\n-- keyboard : F5 runs the sole statement the cursor is in, F9 (or Ctrl+Enter)
--- runs the whole script, or just the selected text if there is a selection
+\n-- keyboard : F5 or Ctrl+Shift+Enter runs the sole statement the cursor is in,
+-- F9 or Ctrl+Enter runs the whole script (or just the selected text)
 
 .headers on
 .separator ;
@@ -257,8 +257,12 @@ class App:
 
             # Bind keyboard shortcuts
             self.tk_win.bind("<F9>", self.run_tab)
-            # F5 runs only the statement the cursor is in
+            # F5 runs only the statement the cursor is in : so does
+            # Ctrl+Shift+Enter, for keyboards where F-keys need an 'Fn' press
             self.tk_win.bind("<F5>", self.run_statement)
+            self.tk_win.bind_class(
+                "Text", "<Control-Shift-Return>", self.run_statement
+            )
             # Ctrl+Enter runs the script (class binding also eats the line return)
             self.tk_win.bind_class("Text", "<Control-Return>", self.run_tab_event)
             # Ctrl+mousewheel zooms the font, wherever the mouse is
