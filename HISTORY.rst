@@ -1,6 +1,28 @@
 Changelog
 =========
 
+2026-08-04 : v1.3.0 'One statement at a time !'
+------------------------------------------------
+
+* shortcut : Ctrl+Shift+Enter (or F5) runs only the sql statement the cursor is in, instead of the whole script ; a cursor sitting right after a ';' means the statement that just ended, and dot-commands count as statements too
+
+* shortcut : the modifier combo is the documented one, the function key only its alias : on a keyboard whose function row is hardware-first, the system eats F5 and F9 before the application sees them
+
+* memo : the welcome script now states what Ctrl+Shift+Enter / F5 and Ctrl+Enter / F9 do ; none of them was documented before
+
+* fix : no database connection was ever closed, in close_db() and in the .open dot-command alike : both named the method without calling it
+
+* fix : .open lost the rest of the script : the cursor is bound once, before the instruction loop, so every statement following a .open silently ran against the abandoned database ; it is refreshed after each dot-command now, .open and .restore being the ones that swap the connection
+
+* fix : an unrecognised dot-command matched nothing, fell through and was reported as 'Ok' : it answers 'unknown command : .x' with an Error status now
+
+* fix : .shell sliced its argument with the length of '.print', correct only by the coincidence that both words are six characters long
+
+* source diet : the 166-line dot-command block leaves create_and_add_results for App.run_dotcommand() (complexity 62 -> 32), 'the selection, or the whole script' is shared as tab_script() instead of being written out four times, and run_temp() keeps its output state in a dict rather than six _bkp locals ; three bare excepts go away
+
+* packaging : PyPI reported no license at all, license = {file = "LICENSE"} emitting only a License-File header : the MIT license is declared as a PEP 639 SPDX expression now
+
+
 2026-07-19 : v1.2.0 'json integration and last opened database !'
 ------------------------------------------------------------------
 
