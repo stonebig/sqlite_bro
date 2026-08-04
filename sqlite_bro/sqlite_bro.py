@@ -148,6 +148,22 @@ select * from duckdb_tables();
 
 """ + WELCOME_END.replace('test.db', 'test.duckdb')
 
+WELCOME_TEXT = """-- SQLite Memo (Demo = click on green "->" and "@" icons)
+-- (tip : open or create a '.duckdb' file to use the DuckDB engine instead)
+\n-- to CREATE a table 'item' and a table 'part' :
+""" + WELCOME_CREATE + """
+\n-- to USE a python embedded function :
+select py_hello(), py_fib(6) as fibonacci, sqlite_version(),
+       time('now', 'localtime') t, datetime('now', 'localtime') dt;
+\n-- to use SAVEPOINT :
+SAVEPOINT remember_Neo;  -- create a savepoint
+UPDATE item SET Description = 'Smith'; -- do things
+SELECT ItemNo, Description FROM Item; -- see things done
+ROLLBACK TO SAVEPOINT remember_Neo; -- go back to savepoint state
+SELECT ItemNo, Description FROM Item;  -- see all is back to normal
+RELEASE SAVEPOINT remember_Neo; -- free memory
+""" + WELCOME_END
+
 
 class App:
     """the GUI graphic application"""
@@ -2918,21 +2934,7 @@ class Baresql:
 
 
 def _main():
-    welcome_text = """-- SQLite Memo (Demo = click on green "->" and "@" icons)
--- (tip : open or create a '.duckdb' file to use the DuckDB engine instead)
-\n-- to CREATE a table 'item' and a table 'part' :
-""" + WELCOME_CREATE + """
-\n-- to USE a python embedded function :
-select py_hello(), py_fib(6) as fibonacci, sqlite_version(),
-       time('now', 'localtime') t, datetime('now', 'localtime') dt;
-\n-- to use SAVEPOINT :
-SAVEPOINT remember_Neo;  -- create a savepoint
-UPDATE item SET Description = 'Smith'; -- do things
-SELECT ItemNo, Description FROM Item; -- see things done
-ROLLBACK TO SAVEPOINT remember_Neo; -- go back to savepoint state
-SELECT ItemNo, Description FROM Item;  -- see all is back to normal
-RELEASE SAVEPOINT remember_Neo; -- free memory
-"""+  WELCOME_END
+    welcome_text = WELCOME_TEXT
 
     parser = argparse.ArgumentParser(
         description="sqlite_bro : a graphic SQLite and DuckDB browser"
