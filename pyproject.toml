@@ -10,10 +10,10 @@ authors = [
 dependencies = []
 requires-python = ">=3.3"
 readme = "README.rst"
-license = {file = "LICENSE"}
-classifiers=[
+license = "MIT"  # PEP 639 SPDX expression, so PyPI exposes a License-Expression
+license-files = ["LICENSE"]
+classifiers=[  # no 'License ::' classifier: PyPI rejects it alongside License-Expression
     'Intended Audience :: Education',
-    'License :: OSI Approved :: MIT License',
     'Operating System :: MacOS',
     'Operating System :: Microsoft :: Windows',
     'Operating System :: OS Independent',
