@@ -42,6 +42,13 @@ DB_FILETYPES = [
     ("all", "*.*"),
 ]
 
+# the sqlite3-cli style commands a script may use (see App.run_dotcommand)
+DOT_COMMANDS = (
+    ".backup", ".cd", ".dump", ".excel", ".headers", ".import", ".once",
+    ".open", ".output", ".print", ".read", ".restore", ".separator", ".shell",
+)
+
+
 def temp_csv():
     """return the name of a fresh temporary .csv file"""
     return tmpf.NamedTemporaryFile(delete=False, suffix="_sqlite_bro.csv").name
@@ -627,7 +634,7 @@ class App:
 
     def close_db(self):
         """close the database"""
-        self.conn.close
+        self.conn.close()
         self.new_db(":memory:")
         self.actualize_db()
 
@@ -1288,6 +1295,8 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
         # every dot-command runs from (and refreshes) the current directory
         os.chdir(self.current_directory)
         self.current_directory = os.getcwd()
+        if cmd not in DOT_COMMANDS:
+            return "unknown command : %s" % cmd, "Error"
         if cmd == ".headers" and args and args[0].lower() in ("on", "off"):
             self.default_header = args[0].lower() == "on"
         elif cmd == ".separator" and args:
@@ -1380,7 +1389,7 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
             self.run_tab()
             self.actualize_db()
         elif cmd == ".open":
-            self.close_db
+            self.conn.close()  # was 'self.close_db' : an attribute, never called
             if args:
                 self.open_db(self.clean_path(args[0]))
             else:
@@ -1392,7 +1401,7 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
         elif cmd == ".backup" and args:
             self.backup_main_to(self.clean_path(args[0]))
         elif cmd == ".shell" and args:
-            os.system(instru[len(".print") + 1 :] + "\n")
+            os.system(instru[len(cmd) + 1 :] + "\n")
         return result, "Ok"
 
     def create_and_add_results(self, instructions, tab_tk_id, limit=-1, log=None):
@@ -1454,6 +1463,10 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
                         instru, tab_tk_id, log
                     )
                     add_log(result, status, first_line)
+                    # .open/.restore swap self.conn : the cursor must follow
+                    cu = self.conn.conn.cursor()
+                    if getattr(self.conn.conn, "isolation_level", None) == "":
+                        self.conn.conn.isolation_level = None
 
                 except IOError as err:
                     msg = "I/O error: {0}".format(err)
