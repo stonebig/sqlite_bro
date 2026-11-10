@@ -1344,20 +1344,28 @@ e/BqhsRJM2fHnD1puuQJ9GdQewIBKN23tOnSfTR5FgSQlKlVqlQXZs169anCrQOxrhyLMCAAOw==
         elif cmd in (".once", ".output", ".excel"):
             if cmd == ".excel":
                 cmd, args = ".once", ["--bom", "-x"]
-            if cmd == ".once":
-                self.once_mode, self.init_output = True, True
+            if not args or args == ["--bom"]:
+                if cmd == ".output":
+                    # bare `.output` sends output back to stdout
+                    self.output_mode, self.once_mode = False, False
+                    self.init_output, self.output_file = True, None
+                else:
+                    return "missing filename : %s" % cmd, "Error"
             else:
-                self.output_mode, self.init_output = True, True
-            self.x_mode = False
-            self.encode_in = "utf-8-sig" if "--bom" in args else "utf-8"
-            self.output_file = self.clean_path(
-                args[1] if args[0] == "--bom" else args[0]
-            )
-            if self.output_file == "-x":
-                self.x_mode = True
-                self.output_file = temp_csv()
-            if self.output_file is None or self.output_file == "":
-                self.output_mode, self.init_output = False, False
+                if cmd == ".once":
+                    self.once_mode, self.init_output = True, True
+                else:
+                    self.output_mode, self.init_output = True, True
+                self.x_mode = False
+                self.encode_in = "utf-8-sig" if "--bom" in args else "utf-8"
+                self.output_file = self.clean_path(
+                    args[1] if args[0] == "--bom" else args[0]
+                )
+                if self.output_file == "-x":
+                    self.x_mode = True
+                    self.output_file = temp_csv()
+                if self.output_file is None or self.output_file == "":
+                    self.output_mode, self.init_output = False, False
         elif cmd == ".print":
             if self.output_mode or self.once_mode:
                 write_mode = "w" if self.init_output else "a"  # Write or Append
