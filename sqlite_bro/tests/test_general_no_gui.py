@@ -122,3 +122,18 @@ def test_statement_at():
     assert app.statement_at("", 0) == ""         # nothing to run
     assert app.statement_at("   \n  ", 3) == ""
     assert app.statement_at("select 42", 3) == "select 42"
+
+
+def test_dotcommand_output_once_missing_filename():
+    "bare .output resets to stdout, bare .once reports an error, no traceback"
+    app.new_db(":memory:")
+    msg, status = app.run_dotcommand(".output", None)
+    assert status == "Ok"
+    assert (app.output_mode, app.once_mode) == (False, False)
+    assert app.output_file is None
+    msg, status = app.run_dotcommand(".once", None)
+    assert status == "Error"
+    assert ".once" in msg
+    msg, status = app.run_dotcommand(".output --bom", None)
+    assert status == "Ok"
+    assert app.output_file is None
